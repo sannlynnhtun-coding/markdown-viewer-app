@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MarkdownViewerApp/MarkdownViewerApp.csproj">
+    <Platform Solution="Debug|*" Project="x64" />
+    <Platform Solution="Release|*" Project="x64" />
+  </Project>
+</Solution>

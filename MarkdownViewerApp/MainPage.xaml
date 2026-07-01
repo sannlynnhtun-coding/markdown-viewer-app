@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="MarkdownViewerApp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Padding="16,12" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="ChooseFolderButton" Click="ChooseFolder_Click" ToolTipService.ToolTip="Choose folder">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="14" Glyph="&#xE838;" />
+                    <TextBlock Text="Choose Folder" />
+                </StackPanel>
+            </Button>
+
+            <TextBlock
+                x:Name="FolderPathText"
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                Text="No folder selected"
+                TextTrimming="CharacterEllipsis" />
+
+            <TextBlock
+                x:Name="DirtyText"
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Foreground="#FFC77700"
+                Text="Unsaved"
+                Visibility="Collapsed" />
+
+            <Button
+                x:Name="EditButton"
+                Grid.Column="3"
+                Click="Edit_Click"
+                IsEnabled="False"
+                ToolTipService.ToolTip="Edit">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="14" Glyph="&#xE70F;" />
+                    <TextBlock Text="Edit" />
+                </StackPanel>
+            </Button>
+
+            <Button
+                x:Name="SaveButton"
+                Grid.Column="4"
+                Click="Save_Click"
+                IsEnabled="False"
+                Visibility="Collapsed"
+                ToolTipService.ToolTip="Save">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="14" Glyph="&#xE74E;" />
+                    <TextBlock Text="Save" />
+                </StackPanel>
+            </Button>
+
+            <Button
+                x:Name="RevertButton"
+                Grid.Column="5"
+                Click="Revert_Click"
+                IsEnabled="False"
+                Visibility="Collapsed"
+                ToolTipService.ToolTip="Revert">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon FontSize="14" Glyph="&#xE7A7;" />
+                    <TextBlock Text="Revert" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
+                <Grid Padding="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock FontSize="16" FontWeight="SemiBold" Text="Files" />
+                        <TextBlock
+                            x:Name="FileCountText"
+                            HorizontalAlignment="Right"
+                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                            Text="0 files" />
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <ListView
+                            x:Name="FilesList"
+                            DisplayMemberPath="Name"
+                            SelectionChanged="FilesList_SelectionChanged"
+                            SelectionMode="Single" />
+                        <TextBlock
+                            x:Name="EmptyFilesText"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                            Text="Choose a folder to list .md files."
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                <TabView
+                    x:Name="ContentTabs"
+                    CanDragTabs="False"
+                    CanReorderTabs="False"
+                    IsAddTabButtonVisible="False"
+                    SelectedIndex="0">
+                    <TabViewItem Header="Preview" IsClosable="False">
+                        <ScrollViewer Padding="16" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="PreviewPanel" Spacing="10" />
+                        </ScrollViewer>
+                    </TabViewItem>
+                    <TabViewItem Header="Code" IsClosable="False">
+                        <TextBox
+                            x:Name="EditorBox"
+                            AcceptsReturn="True"
+                            FontFamily="Myanmar Text, Consolas"
+                            FontSize="14"
+                            IsEnabled="False"
+                            IsReadOnly="True"
+                            IsSpellCheckEnabled="False"
+                            IsTextPredictionEnabled="False"
+                            Margin="12"
+                            PlaceholderText="Select a Markdown file"
+                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            TextChanged="EditorBox_TextChanged"
+                            TextWrapping="NoWrap" />
+                    </TabViewItem>
+                </TabView>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

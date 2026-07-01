@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MarkdownViewerApp (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MarkdownViewerApp": {
+      "commandName": "Project"
+    }
+  }
+}
