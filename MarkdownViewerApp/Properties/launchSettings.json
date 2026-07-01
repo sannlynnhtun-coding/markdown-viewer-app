@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "MarkdownViewerApp (Package)": {
+    "Markdown Viewer (Package)": {
       "commandName": "MsixPackage"
     },
-    "MarkdownViewerApp": {
+    "Markdown Viewer": {
       "commandName": "Project"
     }
   }
