@@ -16,6 +16,7 @@
         <Grid Padding="16,12" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -23,7 +24,20 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Button x:Name="ChooseFolderButton" Click="ChooseFolder_Click" ToolTipService.ToolTip="Choose folder">
+            <Button
+                x:Name="ToggleSidebarButton"
+                Grid.Column="0"
+                Click="ToggleSidebar_Click"
+                AutomationProperties.Name="Toggle files sidebar"
+                ToolTipService.ToolTip="Toggle files sidebar">
+                <FontIcon FontSize="14" Glyph="&#xE700;" />
+            </Button>
+
+            <Button
+                x:Name="ChooseFolderButton"
+                Grid.Column="1"
+                Click="ChooseFolder_Click"
+                ToolTipService.ToolTip="Choose folder">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="14" Glyph="&#xE838;" />
                     <TextBlock Text="Choose Folder" />
@@ -32,7 +46,7 @@
 
             <TextBlock
                 x:Name="FolderPathText"
-                Grid.Column="1"
+                Grid.Column="2"
                 VerticalAlignment="Center"
                 Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
                 Text="No folder selected"
@@ -40,7 +54,7 @@
 
             <TextBlock
                 x:Name="DirtyText"
-                Grid.Column="2"
+                Grid.Column="3"
                 VerticalAlignment="Center"
                 Foreground="#FFC77700"
                 Text="Unsaved"
@@ -48,7 +62,7 @@
 
             <Button
                 x:Name="EditButton"
-                Grid.Column="3"
+                Grid.Column="4"
                 Click="Edit_Click"
                 IsEnabled="False"
                 ToolTipService.ToolTip="Edit">
@@ -60,7 +74,7 @@
 
             <Button
                 x:Name="SaveButton"
-                Grid.Column="4"
+                Grid.Column="5"
                 Click="Save_Click"
                 IsEnabled="False"
                 Visibility="Collapsed"
@@ -73,7 +87,7 @@
 
             <Button
                 x:Name="RevertButton"
-                Grid.Column="5"
+                Grid.Column="6"
                 Click="Revert_Click"
                 IsEnabled="False"
                 Visibility="Collapsed"
@@ -85,77 +99,91 @@
             </Button>
         </Grid>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="260" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <SplitView
+            x:Name="FilesSplitView"
+            Grid.Row="1"
+            CompactPaneLength="0"
+            DisplayMode="Inline"
+            IsPaneOpen="True"
+            OpenPaneLength="320"
+            PanePlacement="Left">
+            <SplitView.Pane>
+                <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
+                    <Grid Padding="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
 
-            <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
-                <Grid Padding="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Files" />
+                            <TextBlock
+                                x:Name="FileCountText"
+                                HorizontalAlignment="Right"
+                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                                Text="0 files" />
+                        </Grid>
 
-                    <Grid Margin="0,0,0,8">
-                        <TextBlock FontSize="16" FontWeight="SemiBold" Text="Files" />
-                        <TextBlock
-                            x:Name="FileCountText"
-                            HorizontalAlignment="Right"
-                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                            Text="0 files" />
-                    </Grid>
-
-                    <Grid Grid.Row="1">
-                        <ListView
-                            x:Name="FilesList"
-                            DisplayMemberPath="Name"
-                            SelectionChanged="FilesList_SelectionChanged"
-                            SelectionMode="Single" />
-                        <TextBlock
-                            x:Name="EmptyFilesText"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                            Text="Choose a folder to list .md files."
-                            TextAlignment="Center"
-                            TextWrapping="Wrap" />
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <Border Grid.Column="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                <TabView
-                    x:Name="ContentTabs"
-                    CanDragTabs="False"
-                    CanReorderTabs="False"
-                    IsAddTabButtonVisible="False"
-                    SelectedIndex="0">
-                    <TabViewItem Header="Preview" IsClosable="False">
-                        <ScrollViewer Padding="16" VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="PreviewPanel" Spacing="10" />
-                        </ScrollViewer>
-                    </TabViewItem>
-                    <TabViewItem Header="Code" IsClosable="False">
                         <TextBox
-                            x:Name="EditorBox"
-                            AcceptsReturn="True"
-                            FontFamily="Myanmar Text, Consolas"
-                            FontSize="14"
-                            IsEnabled="False"
-                            IsReadOnly="True"
-                            IsSpellCheckEnabled="False"
-                            IsTextPredictionEnabled="False"
-                            Margin="12"
-                            PlaceholderText="Select a Markdown file"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            TextChanged="EditorBox_TextChanged"
-                            TextWrapping="NoWrap" />
-                    </TabViewItem>
-                </TabView>
-            </Border>
-        </Grid>
+                            x:Name="SearchBox"
+                            Grid.Row="1"
+                            Margin="0,0,0,8"
+                            PlaceholderText="Search files or keywords"
+                            TextChanged="SearchBox_TextChanged" />
+
+                        <Grid Grid.Row="2">
+                            <ListView
+                                x:Name="FilesList"
+                                DisplayMemberPath="RelativePath"
+                                SelectionChanged="FilesList_SelectionChanged"
+                                SelectionMode="Single" />
+                            <TextBlock
+                                x:Name="EmptyFilesText"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                                Text="Choose a folder to list .md files."
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </SplitView.Pane>
+
+            <SplitView.Content>
+                <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                    <TabView
+                        x:Name="ContentTabs"
+                        CanDragTabs="False"
+                        CanReorderTabs="False"
+                        IsAddTabButtonVisible="False"
+                        SelectedIndex="0">
+                        <TabViewItem Header="Preview" IsClosable="False">
+                            <ScrollViewer Padding="16" VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="PreviewPanel" Spacing="10" />
+                            </ScrollViewer>
+                        </TabViewItem>
+                        <TabViewItem Header="Code" IsClosable="False">
+                            <TextBox
+                                x:Name="EditorBox"
+                                AcceptsReturn="True"
+                                FontFamily="Myanmar Text, Consolas"
+                                FontSize="14"
+                                IsEnabled="False"
+                                IsReadOnly="True"
+                                IsSpellCheckEnabled="False"
+                                IsTextPredictionEnabled="False"
+                                Margin="12"
+                                PlaceholderText="Select a Markdown file"
+                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                TextChanged="EditorBox_TextChanged"
+                                TextWrapping="NoWrap" />
+                        </TabViewItem>
+                    </TabView>
+                </Border>
+            </SplitView.Content>
+        </SplitView>
     </Grid>
 </Page>

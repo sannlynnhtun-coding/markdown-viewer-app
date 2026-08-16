@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Windows.Storage.Pickers;
 using Windows.UI.Text;
@@ -18,16 +19,23 @@ public sealed partial class MainPage : Page
     private static readonly Regex LinkPattern = new(@"\[([^\]]+)\]\(([^)]+)\)", RegexOptions.Compiled);
     private static readonly FontFamily PreviewFontFamily = new("Myanmar Text, Segoe UI");
     private static readonly FontFamily CodeFontFamily = new("Myanmar Text, Consolas");
+    private static readonly SolidColorBrush SearchMatchBrush = new(Colors.OrangeRed);
+    private readonly List<MarkdownFile> _allFiles = new();
     private readonly ObservableCollection<MarkdownFile> _files = new();
     private MarkdownFile? _currentFile;
     private bool _hasUnsavedChanges;
     private bool _isEditing;
     private bool _isLoadingFile;
     private bool _isChangingSelection;
+    private string _searchQuery = "";
 
     public MainPage()
     {
         InitializeComponent();
+#if DEBUG
+        VerifyTableParser();
+        VerifySearchMatching();
+#endif
         FilesList.ItemsSource = _files;
         RenderPreview();
         UpdateUiState("Choose a folder to list .md files.");
@@ -79,7 +87,16 @@ public sealed partial class MainPage : Page
             return;
         }
 
-        LoadFolder(folder.Path);
+        try
+        {
+            await LoadFolderAsync(folder.Path);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Folder load failed", ex.Message);
+            return;
+        }
+
         if (_files.Count > 0)
         {
             _isChangingSelection = true;
@@ -132,8 +149,23 @@ public sealed partial class MainPage : Page
         }
 
         _hasUnsavedChanges = true;
+        _currentFile.Content = EditorBox.Text;
+        ApplySearch();
         RenderPreview(EditorBox.Text);
         UpdateUiState();
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _searchQuery = SearchBox.Text.Trim();
+        ApplySearch();
+        RenderPreview();
+        UpdateUiState(EmptyFilesMessage());
+    }
+
+    private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
+    {
+        FilesSplitView.IsPaneOpen = !FilesSplitView.IsPaneOpen;
     }
 
     private async void Save_Click(object sender, RoutedEventArgs e)
@@ -169,9 +201,12 @@ public sealed partial class MainPage : Page
         try
         {
             await File.WriteAllTextAsync(_currentFile.FullPath, EditorBox.Text, Encoding.UTF8);
+            _currentFile.Content = EditorBox.Text;
             _hasUnsavedChanges = false;
             _isEditing = false;
             ContentTabs.SelectedIndex = 0;
+            ApplySearch();
+            RenderPreview(EditorBox.Text);
             UpdateUiState();
         }
         catch (Exception ex)
@@ -190,26 +225,34 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void LoadFolder(string folderPath)
+    private async Task LoadFolderAsync(string folderPath)
     {
         FolderPathText.Text = folderPath;
         _currentFile = null;
         _hasUnsavedChanges = false;
         _isEditing = false;
+        _searchQuery = "";
         _isLoadingFile = true;
         EditorBox.Text = "";
+        SearchBox.Text = "";
         _isLoadingFile = false;
 
+        _allFiles.Clear();
         _files.Clear();
-        foreach (var file in Directory.EnumerateFiles(folderPath, "*.md", SearchOption.TopDirectoryOnly)
-                     .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
+        foreach (var file in Directory.EnumerateFiles(folderPath, "*.md", SearchOption.AllDirectories)
+                     .OrderBy(file => Path.GetRelativePath(folderPath, file), StringComparer.CurrentCultureIgnoreCase))
         {
-            _files.Add(new MarkdownFile(Path.GetFileName(file), file));
+            _allFiles.Add(new MarkdownFile(
+                Path.GetFileName(file),
+                Path.GetRelativePath(folderPath, file),
+                file,
+                await File.ReadAllTextAsync(file, Encoding.UTF8)));
         }
 
+        ApplySearch();
         ContentTabs.SelectedIndex = 0;
         RenderPreview();
-        UpdateUiState(_files.Count == 0 ? "No .md files in this folder." : "");
+        UpdateUiState(EmptyFilesMessage());
     }
 
     private async Task LoadFileAsync(MarkdownFile file)
@@ -226,6 +269,7 @@ public sealed partial class MainPage : Page
         }
 
         _currentFile = file;
+        _currentFile.Content = markdown;
         _hasUnsavedChanges = false;
         _isEditing = false;
         _isLoadingFile = true;
@@ -234,6 +278,44 @@ public sealed partial class MainPage : Page
         ContentTabs.SelectedIndex = 0;
         RenderPreview(markdown);
         UpdateUiState();
+    }
+
+    private void ApplySearch()
+    {
+        var visibleFiles = string.IsNullOrWhiteSpace(_searchQuery)
+            ? _allFiles
+            : _allFiles.Where(file => MatchesSearch(file, _searchQuery)).ToList();
+
+        _isChangingSelection = true;
+        _files.Clear();
+        foreach (var file in visibleFiles)
+        {
+            _files.Add(file);
+        }
+
+        FilesList.SelectedItem = _currentFile is not null && _files.Contains(_currentFile)
+            ? _currentFile
+            : null;
+        _isChangingSelection = false;
+    }
+
+    private string EmptyFilesMessage()
+    {
+        if (_allFiles.Count == 0)
+        {
+            return "No .md files in this folder.";
+        }
+
+        return string.IsNullOrWhiteSpace(_searchQuery)
+            ? ""
+            : "No Markdown files match this search.";
+    }
+
+    private static bool MatchesSearch(MarkdownFile file, string query)
+    {
+        return file.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+               file.RelativePath.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+               file.Content.Contains(query, StringComparison.CurrentCultureIgnoreCase);
     }
 
     private void RenderPreview(string? markdown = null)
@@ -257,8 +339,10 @@ public sealed partial class MainPage : Page
         var code = new StringBuilder();
         var inCodeBlock = false;
 
-        foreach (var rawLine in text.Replace("\r\n", "\n").Split('\n'))
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        for (var i = 0; i < lines.Length; i++)
         {
+            var rawLine = lines[i];
             var line = rawLine.TrimEnd('\r');
             var trimmed = line.Trim();
 
@@ -283,6 +367,14 @@ public sealed partial class MainPage : Page
             if (string.IsNullOrWhiteSpace(line))
             {
                 FlushParagraph(paragraph);
+                continue;
+            }
+
+            if (TryReadTable(lines, i, out var table, out var tableEndIndex))
+            {
+                FlushParagraph(paragraph);
+                AddTable(table);
+                i = tableEndIndex;
                 continue;
             }
 
@@ -383,13 +475,7 @@ public sealed partial class MainPage : Page
             BorderThickness = new Thickness(4, 0, 0, 0),
             Margin = new Thickness(0, 4, 0, 4),
             Padding = new Thickness(10, 0, 0, 0),
-            Child = new TextBlock
-            {
-                FontFamily = PreviewFontFamily,
-                LineHeight = LineHeight(14),
-                Text = CleanInline(trimmed[2..]),
-                TextWrapping = TextWrapping.Wrap
-            }
+            Child = CreateTextBlock(CleanInline(trimmed[2..]), PreviewFontFamily, 14, Weight(400), new Thickness(0))
         });
         return true;
     }
@@ -414,28 +500,133 @@ public sealed partial class MainPage : Page
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(12),
             Margin = new Thickness(0, 4, 0, 4),
-            Child = new TextBlock
-            {
-                FontFamily = CodeFontFamily,
-                LineHeight = LineHeight(14),
-                Text = code,
-                TextWrapping = TextWrapping.Wrap
-            }
+            Child = CreateTextBlock(code, CodeFontFamily, 14, Weight(400), new Thickness(0))
         });
+    }
+
+    private void AddTable(MarkdownTable table)
+    {
+        var grid = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+
+        for (var column = 0; column < table.Headers.Count; column++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                MinWidth = column == 0 ? 120 : 180,
+                Width = column == 0 ? GridLength.Auto : new GridLength(1, GridUnitType.Star)
+            });
+        }
+
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (var row = 0; row < table.Rows.Count; row++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+
+        for (var column = 0; column < table.Headers.Count; column++)
+        {
+            AddTableCell(grid, table.Headers[column], 0, column, isHeader: true);
+        }
+
+        for (var row = 0; row < table.Rows.Count; row++)
+        {
+            for (var column = 0; column < table.Headers.Count; column++)
+            {
+                AddTableCell(grid, table.Rows[row][column], row + 1, column, isHeader: false);
+            }
+        }
+
+        PreviewPanel.Children.Add(new Border
+        {
+            BorderBrush = new SolidColorBrush(Colors.Gray),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Margin = new Thickness(0, 4, 0, 8),
+            Child = grid
+        });
+    }
+
+    private void AddTableCell(Grid grid, string text, int row, int column, bool isHeader)
+    {
+        var cell = new Border
+        {
+            Background = isHeader ? new SolidColorBrush(Colors.Gray) { Opacity = 0.12 } : null,
+            BorderBrush = new SolidColorBrush(Colors.Gray),
+            BorderThickness = new Thickness(0, 0, 1, 1),
+            Padding = new Thickness(10, 6, 10, 6),
+            Child = CreateTextBlock(text, PreviewFontFamily, 14, isHeader ? Weight(600) : Weight(400), new Thickness(0))
+        };
+
+        Grid.SetRow(cell, row);
+        Grid.SetColumn(cell, column);
+        grid.Children.Add(cell);
     }
 
     private void AddText(string text, double fontSize, FontWeight weight, Thickness margin)
     {
-        PreviewPanel.Children.Add(new TextBlock
+        PreviewPanel.Children.Add(CreateTextBlock(text, PreviewFontFamily, fontSize, weight, margin));
+    }
+
+    private TextBlock CreateTextBlock(string text, FontFamily fontFamily, double fontSize, FontWeight weight, Thickness margin)
+    {
+        var textBlock = new TextBlock
         {
-            Text = text,
-            FontFamily = PreviewFontFamily,
+            FontFamily = fontFamily,
             FontSize = fontSize,
             FontWeight = weight,
             LineHeight = LineHeight(fontSize),
             Margin = margin,
             TextWrapping = TextWrapping.Wrap
-        });
+        };
+
+        SetHighlightedText(textBlock, text);
+        return textBlock;
+    }
+
+    private void SetHighlightedText(TextBlock textBlock, string text)
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            textBlock.Text = text;
+            return;
+        }
+
+        var start = 0;
+        while (start < text.Length)
+        {
+            var index = text.IndexOf(_searchQuery, start, StringComparison.CurrentCultureIgnoreCase);
+            if (index < 0)
+            {
+                break;
+            }
+
+            if (index > start)
+            {
+                textBlock.Inlines.Add(new Run { Text = text[start..index] });
+            }
+
+            textBlock.Inlines.Add(new Run
+            {
+                Text = text[index..(index + _searchQuery.Length)],
+                Foreground = SearchMatchBrush,
+                FontWeight = Weight(700)
+            });
+            start = index + _searchQuery.Length;
+        }
+
+        if (start == 0)
+        {
+            textBlock.Text = text;
+            return;
+        }
+
+        if (start < text.Length)
+        {
+            textBlock.Inlines.Add(new Run { Text = text[start..] });
+        }
     }
 
     private static FontWeight Weight(ushort value)
@@ -460,6 +651,109 @@ public sealed partial class MainPage : Page
         };
     }
 
+    private static bool TryReadTable(string[] lines, int startIndex, out MarkdownTable table, out int endIndex)
+    {
+        table = new MarkdownTable(Array.Empty<string>(), Array.Empty<IReadOnlyList<string>>());
+        endIndex = startIndex;
+
+        if (startIndex + 1 >= lines.Length ||
+            ParseTableRow(lines[startIndex]) is not { Count: > 0 } header ||
+            ParseTableRow(lines[startIndex + 1]) is not { Count: > 0 } separator ||
+            separator.Count != header.Count ||
+            !separator.All(IsTableSeparatorCell))
+        {
+            return false;
+        }
+
+        var rows = new List<IReadOnlyList<string>>();
+        for (var i = startIndex + 2; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i]) ||
+                ParseTableRow(lines[i]) is not { Count: > 0 } row ||
+                row.Count != header.Count)
+            {
+                break;
+            }
+
+            rows.Add(row);
+            endIndex = i;
+        }
+
+        table = new MarkdownTable(header, rows);
+        endIndex = Math.Max(endIndex, startIndex + 1);
+        return true;
+    }
+
+    private static List<string>? ParseTableRow(string line)
+    {
+        var trimmed = line.Trim();
+        if (!trimmed.Contains('|'))
+        {
+            return null;
+        }
+
+        if (trimmed.StartsWith("|", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[1..];
+        }
+
+        if (trimmed.EndsWith("|", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^1];
+        }
+
+        return trimmed.Split('|').Select(cell => CleanInline(cell.Trim())).ToList();
+    }
+
+    private static bool IsTableSeparatorCell(string cell)
+    {
+        var trimmed = cell.Trim();
+        if (trimmed.StartsWith(":", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[1..];
+        }
+
+        if (trimmed.EndsWith(":", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^1];
+        }
+
+        return trimmed.Length >= 3 && trimmed.All(c => c == '-');
+    }
+
+#if DEBUG
+    private static void VerifyTableParser()
+    {
+        var lines = new[]
+        {
+            "| Term | Meaning |",
+            "| --- | --- |",
+            "| FX | Currency conversion rate |"
+        };
+
+        if (!TryReadTable(lines, 0, out var table, out var endIndex) ||
+            endIndex != 2 ||
+            table.Headers.Count != 2 ||
+            table.Rows.Count != 1 ||
+            table.Rows[0][0] != "FX")
+        {
+            throw new InvalidOperationException("Markdown table parser self-check failed.");
+        }
+    }
+
+    private static void VerifySearchMatching()
+    {
+        var file = new MarkdownFile("business-vocabulary-burmese.md", @"split-markdown\business-vocabulary-burmese.md", "C:\\docs\\business-vocabulary-burmese.md", "FX rate");
+        if (!MatchesSearch(file, "fx") ||
+            !MatchesSearch(file, "split-markdown") ||
+            !MatchesSearch(file, "business-vocabulary") ||
+            MatchesSearch(file, "does-not-exist"))
+        {
+            throw new InvalidOperationException("Markdown search self-check failed.");
+        }
+    }
+#endif
+
     private static string CleanInline(string text)
     {
         text = LinkPattern.Replace(text, "$1 ($2)");
@@ -481,7 +775,10 @@ public sealed partial class MainPage : Page
         RevertButton.Visibility = _isEditing ? Visibility.Visible : Visibility.Collapsed;
         RevertButton.IsEnabled = hasFile;
         DirtyText.Visibility = _hasUnsavedChanges ? Visibility.Visible : Visibility.Collapsed;
-        FileCountText.Text = _files.Count == 1 ? "1 file" : $"{_files.Count} files";
+        SearchBox.IsEnabled = _allFiles.Count > 0;
+        FileCountText.Text = string.IsNullOrWhiteSpace(_searchQuery)
+            ? (_files.Count == 1 ? "1 file" : $"{_files.Count} files")
+            : $"{_files.Count} / {_allFiles.Count} files";
         EmptyFilesText.Text = emptyFilesText ?? EmptyFilesText.Text;
         EmptyFilesText.Visibility = _files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesList.Visibility = _files.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -498,5 +795,24 @@ public sealed partial class MainPage : Page
         }.ShowAsync();
     }
 
-    private sealed record MarkdownFile(string Name, string FullPath);
+    private sealed class MarkdownFile
+    {
+        public MarkdownFile(string name, string relativePath, string fullPath, string content)
+        {
+            Name = name;
+            RelativePath = relativePath;
+            FullPath = fullPath;
+            Content = content;
+        }
+
+        public string Name { get; }
+
+        public string RelativePath { get; }
+
+        public string FullPath { get; }
+
+        public string Content { get; set; }
+    }
+
+    private sealed record MarkdownTable(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows);
 }
