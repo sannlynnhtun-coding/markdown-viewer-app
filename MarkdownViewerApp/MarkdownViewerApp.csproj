@@ -6,6 +6,9 @@
     <RootNamespace>MarkdownViewerApp</RootNamespace>
     <AssemblyTitle>Markdown Viewer</AssemblyTitle>
     <Product>Markdown Viewer</Product>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
@@ -79,7 +82,8 @@
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
+    <WindowsAppSDKSelfContained Condition="'$(Configuration)' != 'Debug'">True</WindowsAppSDKSelfContained>
   </PropertyGroup>
   <ItemGroup>
     <PRIResource Remove="obj\**" />
