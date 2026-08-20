@@ -1,4 +1,7 @@
+using System.Linq;
+using Microsoft.Windows.AppLifecycle;
 using Microsoft.UI.Xaml;
+using Windows.ApplicationModel.Activation;
 
 namespace MarkdownViewerApp;
 
@@ -13,7 +16,13 @@ public partial class App : Application
 
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        MainWindow = new MainWindow();
+        var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
+        var initialFilePath = activationArgs?.Kind == ExtendedActivationKind.File &&
+                              activationArgs.Data is IFileActivatedEventArgs fileArgs
+            ? fileArgs.Files.FirstOrDefault()?.Path
+            : null;
+
+        MainWindow = new MainWindow(initialFilePath);
         MainWindow.Activate();
     }
 }

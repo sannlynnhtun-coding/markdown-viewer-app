@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Windows.UI.Text;
 using WinRT.Interop;
@@ -39,6 +40,25 @@ public sealed partial class MainPage : Page
         FilesList.ItemsSource = _files;
         RenderPreview();
         UpdateUiState("Choose a folder to list .md files.");
+    }
+
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+
+        if (e.Parameter is not string filePath || string.IsNullOrWhiteSpace(filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            await OpenFileFromShellAsync(filePath);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Open failed", ex.Message);
+        }
     }
 
     private async void ChooseFolder_Click(object sender, RoutedEventArgs e)
@@ -253,6 +273,35 @@ public sealed partial class MainPage : Page
         ContentTabs.SelectedIndex = 0;
         RenderPreview();
         UpdateUiState(EmptyFilesMessage());
+    }
+
+    private async Task OpenFileFromShellAsync(string filePath)
+    {
+        if (!string.Equals(Path.GetExtension(filePath), ".md", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Markdown Viewer can only open .md files.");
+        }
+
+        var fullPath = Path.GetFullPath(filePath);
+        var folderPath = Path.GetDirectoryName(fullPath);
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            throw new InvalidOperationException("The file's containing folder could not be found.");
+        }
+
+        await LoadFolderAsync(folderPath);
+
+        var file = _allFiles.FirstOrDefault(candidate =>
+            string.Equals(candidate.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
+        if (file is null)
+        {
+            throw new FileNotFoundException("The selected Markdown file could not be found.", fullPath);
+        }
+
+        _isChangingSelection = true;
+        FilesList.SelectedItem = file;
+        _isChangingSelection = false;
+        await LoadFileAsync(file);
     }
 
     private async Task LoadFileAsync(MarkdownFile file)

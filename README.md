@@ -1,6 +1,6 @@
 # Markdown Viewer
 
-A Windows desktop app for browsing, previewing, and editing Markdown files in a selected folder.
+A Windows desktop app for browsing, previewing, and editing Markdown files in a selected folder. Once installed, it also appears in File Explorer's **Open with** menu for `.md` files.
 
 ## Overview
 
@@ -18,6 +18,8 @@ The current preview supports common Markdown shapes such as headings, paragraphs
 3. Read it in the `Preview` tab.
 4. Click `Edit` to change the source in the `Code` tab.
 5. Save to overwrite the file, or revert to discard edits.
+
+You can also right-click an `.md` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
 
 The app blocks folder changes and file switches while there are unsaved edits, so changes are not lost by accident.
 

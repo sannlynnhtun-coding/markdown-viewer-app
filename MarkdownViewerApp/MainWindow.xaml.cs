@@ -4,7 +4,7 @@ namespace MarkdownViewerApp;
 
 public sealed partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow(string? initialFilePath = null)
     {
         InitializeComponent();
 
@@ -12,6 +12,6 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.SetIcon("Assets/AppIcon.ico");
 
-        RootFrame.Navigate(typeof(MainPage));
+        RootFrame.Navigate(typeof(MainPage), initialFilePath);
     }
 }
