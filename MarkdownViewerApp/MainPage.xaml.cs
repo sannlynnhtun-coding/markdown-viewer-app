@@ -7,9 +7,12 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
+using Windows.System;
 using Windows.UI.Text;
 using WinRT.Interop;
 
@@ -28,6 +31,8 @@ public sealed partial class MainPage : Page
     private bool _isEditing;
     private bool _isLoadingFile;
     private bool _isChangingSelection;
+    private bool _isPreviewControlKeyDown;
+    private bool _isPreviewSelectAllActive;
     private string _searchQuery = "";
 
     public MainPage()
@@ -38,6 +43,18 @@ public sealed partial class MainPage : Page
         VerifySearchMatching();
 #endif
         FilesList.ItemsSource = _files;
+        PreviewScrollViewer.AddHandler(
+            PointerPressedEvent,
+            new PointerEventHandler(PreviewScrollViewer_PointerPressed),
+            handledEventsToo: true);
+        PreviewScrollViewer.AddHandler(
+            KeyDownEvent,
+            new KeyEventHandler(PreviewScrollViewer_KeyDown),
+            handledEventsToo: true);
+        PreviewScrollViewer.AddHandler(
+            KeyUpEvent,
+            new KeyEventHandler(PreviewScrollViewer_KeyUp),
+            handledEventsToo: true);
         RenderPreview();
         UpdateUiState("Choose a folder to list .md files.");
     }
@@ -369,6 +386,8 @@ public sealed partial class MainPage : Page
 
     private void RenderPreview(string? markdown = null)
     {
+        _isPreviewControlKeyDown = false;
+        _isPreviewSelectAllActive = false;
         PreviewPanel.Children.Clear();
 
         if (_currentFile is null)
@@ -619,6 +638,183 @@ public sealed partial class MainPage : Page
         PreviewPanel.Children.Add(CreateTextBlock(text, PreviewFontFamily, fontSize, weight, margin));
     }
 
+    private void PreviewScrollViewer_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Escape && _isPreviewSelectAllActive)
+        {
+            ClearPreviewSelectAll();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == VirtualKey.Control)
+        {
+            _isPreviewControlKeyDown = true;
+            return;
+        }
+
+        if (!_isPreviewControlKeyDown)
+        {
+            return;
+        }
+
+        if (e.Key == VirtualKey.A)
+        {
+            SelectAllPreviewText();
+            e.Handled = _isPreviewSelectAllActive;
+            return;
+        }
+
+        if (e.Key == VirtualKey.C && _isPreviewSelectAllActive)
+        {
+            CopyAllPreviewText();
+            e.Handled = true;
+        }
+    }
+
+    private void PreviewScrollViewer_KeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Control)
+        {
+            _isPreviewControlKeyDown = false;
+        }
+    }
+
+    private void SelectAllPreviewText()
+    {
+        ClearPreviewSelectAll();
+        foreach (var textBlock in DescendantTextBlocks(PreviewPanel))
+        {
+            var text = textBlock.Tag as string ?? textBlock.Text;
+            if (text.Length == 0)
+            {
+                continue;
+            }
+
+            var highlighter = new TextHighlighter
+            {
+                Background = new SolidColorBrush(Colors.DodgerBlue),
+                Foreground = new SolidColorBrush(Colors.White)
+            };
+            highlighter.Ranges.Add(new Microsoft.UI.Xaml.Documents.TextRange
+            {
+                StartIndex = 0,
+                Length = text.Length
+            });
+            textBlock.TextHighlighters.Add(highlighter);
+            _isPreviewSelectAllActive = true;
+        }
+    }
+
+    private void PreviewScrollViewer_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _isPreviewControlKeyDown = false;
+        ClearPreviewSelectAll();
+    }
+
+    private void ClearPreviewSelectAll()
+    {
+        foreach (var textBlock in DescendantTextBlocks(PreviewPanel))
+        {
+            textBlock.TextHighlighters.Clear();
+        }
+
+        _isPreviewSelectAllActive = false;
+    }
+
+    private void CopyAllPreviewText()
+    {
+        var text = GetPreviewText();
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        var dataPackage = new DataPackage
+        {
+            RequestedOperation = DataPackageOperation.Copy
+        };
+        dataPackage.SetText(text);
+        Clipboard.SetContent(dataPackage);
+        Clipboard.Flush();
+    }
+
+    private string GetPreviewText()
+    {
+        var blocks = PreviewPanel.Children
+            .Select(GetPreviewElementText)
+            .Where(text => !string.IsNullOrWhiteSpace(text));
+
+        return string.Join(Environment.NewLine + Environment.NewLine, blocks);
+    }
+
+    private static string GetPreviewElementText(DependencyObject element)
+    {
+        if (element is TextBlock textBlock)
+        {
+            return textBlock.Tag as string ?? textBlock.Text;
+        }
+
+        if (element is Border { Child: Grid table } &&
+            table.RowDefinitions.Count > 0 &&
+            table.ColumnDefinitions.Count > 0)
+        {
+            return GetPreviewTableText(table);
+        }
+
+        if (element is Border { Child: DependencyObject child })
+        {
+            return GetPreviewElementText(child);
+        }
+
+        return string.Join(
+            Environment.NewLine,
+            DescendantTextBlocks(element)
+                .Select(block => block.Tag as string ?? block.Text)
+                .Where(text => !string.IsNullOrEmpty(text)));
+    }
+
+    private static string GetPreviewTableText(Grid table)
+    {
+        var rows = new string[table.RowDefinitions.Count][];
+        for (var row = 0; row < rows.Length; row++)
+        {
+            rows[row] = new string[table.ColumnDefinitions.Count];
+        }
+
+        foreach (var child in table.Children.OfType<FrameworkElement>())
+        {
+            var row = Grid.GetRow(child);
+            var column = Grid.GetColumn(child);
+            if (row < rows.Length && column < rows[row].Length)
+            {
+                rows[row][column] = GetPreviewElementText(child);
+            }
+        }
+
+        return string.Join(
+            Environment.NewLine,
+            rows.Select(row => string.Join('\t', row)));
+    }
+
+    private static IEnumerable<TextBlock> DescendantTextBlocks(DependencyObject root)
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var index = 0; index < childCount; index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            if (child is TextBlock textBlock)
+            {
+                yield return textBlock;
+            }
+
+            foreach (var descendant in DescendantTextBlocks(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
     private TextBlock CreateTextBlock(string text, FontFamily fontFamily, double fontSize, FontWeight weight, Thickness margin)
     {
         var textBlock = new TextBlock
@@ -629,6 +825,7 @@ public sealed partial class MainPage : Page
             IsTextSelectionEnabled = true,
             LineHeight = LineHeight(fontSize),
             Margin = margin,
+            Tag = text,
             TextWrapping = TextWrapping.Wrap
         };
 
@@ -698,6 +895,7 @@ public sealed partial class MainPage : Page
             IsTextSelectionEnabled = true,
             LineHeight = LineHeight(14),
             Foreground = new SolidColorBrush(Colors.Gray),
+            Tag = text,
             TextWrapping = TextWrapping.Wrap
         };
     }

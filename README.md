@@ -16,7 +16,8 @@ The current preview supports common Markdown shapes such as headings, paragraphs
 1. Choose a folder.
 2. Select a Markdown file from the file list.
 3. Read it in the `Preview` tab. Preview text can be selected and copied with the
-   standard Windows mouse and keyboard shortcuts.
+   standard Windows mouse and keyboard shortcuts. Press `Ctrl+A`, then `Ctrl+C`,
+   to copy the complete rendered preview, including tables.
 4. Click `Edit` to change the source in the `Code` tab.
 5. Save to overwrite the file, or revert to discard edits.
 

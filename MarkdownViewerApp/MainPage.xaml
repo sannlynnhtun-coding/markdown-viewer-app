@@ -160,7 +160,11 @@
                         IsAddTabButtonVisible="False"
                         SelectedIndex="0">
                         <TabViewItem Header="Preview" IsClosable="False">
-                            <ScrollViewer Padding="16" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer
+                                x:Name="PreviewScrollViewer"
+                                AutomationProperties.Name="Markdown preview"
+                                Padding="16"
+                                VerticalScrollBarVisibility="Auto">
                                 <StackPanel x:Name="PreviewPanel" Spacing="10" />
                             </ScrollViewer>
                         </TabViewItem>
