@@ -626,6 +626,7 @@ public sealed partial class MainPage : Page
             FontFamily = fontFamily,
             FontSize = fontSize,
             FontWeight = weight,
+            IsTextSelectionEnabled = true,
             LineHeight = LineHeight(fontSize),
             Margin = margin,
             TextWrapping = TextWrapping.Wrap
@@ -694,6 +695,7 @@ public sealed partial class MainPage : Page
         {
             Text = text,
             FontFamily = PreviewFontFamily,
+            IsTextSelectionEnabled = true,
             LineHeight = LineHeight(14),
             Foreground = new SolidColorBrush(Colors.Gray),
             TextWrapping = TextWrapping.Wrap
