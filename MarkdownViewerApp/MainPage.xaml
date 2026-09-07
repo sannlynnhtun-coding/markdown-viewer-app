@@ -22,6 +22,8 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Button
@@ -52,9 +54,18 @@
                 Text="No folder selected"
                 TextTrimming="CharacterEllipsis" />
 
+            <Button
+                x:Name="RefreshFolderButton"
+                Grid.Column="3"
+                Click="RefreshFolder_Click"
+                IsEnabled="False"
+                ToolTipService.ToolTip="Refresh files in this folder">
+                <FontIcon FontSize="14" Glyph="&#xE72C;" />
+            </Button>
+
             <TextBlock
                 x:Name="DirtyText"
-                Grid.Column="3"
+                Grid.Column="4"
                 VerticalAlignment="Center"
                 Foreground="#FFC77700"
                 Text="Unsaved"
@@ -62,7 +73,7 @@
 
             <Button
                 x:Name="EditButton"
-                Grid.Column="4"
+                Grid.Column="5"
                 Click="Edit_Click"
                 IsEnabled="False"
                 ToolTipService.ToolTip="Edit">
@@ -74,7 +85,7 @@
 
             <Button
                 x:Name="SaveButton"
-                Grid.Column="5"
+                Grid.Column="6"
                 Click="Save_Click"
                 IsEnabled="False"
                 Visibility="Collapsed"
@@ -87,7 +98,7 @@
 
             <Button
                 x:Name="RevertButton"
-                Grid.Column="6"
+                Grid.Column="7"
                 Click="Revert_Click"
                 IsEnabled="False"
                 Visibility="Collapsed"
@@ -96,6 +107,14 @@
                     <FontIcon FontSize="14" Glyph="&#xE7A7;" />
                     <TextBlock Text="Revert" />
                 </StackPanel>
+            </Button>
+
+            <Button
+                x:Name="ThemeButton"
+                Grid.Column="8"
+                Click="Theme_Click"
+                ToolTipService.ToolTip="Switch to dark mode">
+                <FontIcon x:Name="ThemeIcon" FontSize="14" Glyph="&#xE706;" />
             </Button>
         </Grid>
 
@@ -111,6 +130,7 @@
                 <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
                     <Grid Padding="12">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
@@ -132,7 +152,17 @@
                             PlaceholderText="Search files or keywords"
                             TextChanged="SearchBox_TextChanged" />
 
-                        <Grid Grid.Row="2">
+                        <ToggleSwitch
+                            x:Name="MarkdownOnlyToggle"
+                            Grid.Row="2"
+                            Header="Markdown files only"
+                            IsOn="True"
+                            Margin="0,0,0,8"
+                            OffContent="All files"
+                            OnContent=".md only"
+                            Toggled="MarkdownOnlyToggle_Toggled" />
+
+                        <Grid Grid.Row="3">
                             <ListView
                                 x:Name="FilesList"
                                 DisplayMemberPath="RelativePath"
@@ -143,7 +173,7 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                Text="Choose a folder to list .md files."
+                                Text="Choose a folder to list files."
                                 TextAlignment="Center"
                                 TextWrapping="Wrap" />
                         </Grid>

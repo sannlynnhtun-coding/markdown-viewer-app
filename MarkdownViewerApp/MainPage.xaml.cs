@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
@@ -33,6 +35,7 @@ public sealed partial class MainPage : Page
     private bool _isChangingSelection;
     private bool _isPreviewControlKeyDown;
     private bool _isPreviewSelectAllActive;
+    private string _folderPath = "";
     private string _searchQuery = "";
 
     public MainPage()
@@ -56,7 +59,8 @@ public sealed partial class MainPage : Page
             new KeyEventHandler(PreviewScrollViewer_KeyUp),
             handledEventsToo: true);
         RenderPreview();
-        UpdateUiState("Choose a folder to list .md files.");
+        UpdateThemeButton();
+        UpdateUiState("Choose a folder to list files.");
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -143,6 +147,62 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private async void RefreshFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_folderPath))
+        {
+            return;
+        }
+
+        if (_hasUnsavedChanges)
+        {
+            await ShowMessageAsync("Unsaved changes", "Save or revert the current file before refreshing the folder.");
+            return;
+        }
+
+        try
+        {
+            await RefreshFolderAsync();
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Folder refresh failed", ex.Message);
+        }
+    }
+
+    private async void MarkdownOnlyToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_folderPath))
+        {
+            return;
+        }
+
+        if (_hasUnsavedChanges)
+        {
+            MarkdownOnlyToggle.Toggled -= MarkdownOnlyToggle_Toggled;
+            MarkdownOnlyToggle.IsOn = !MarkdownOnlyToggle.IsOn;
+            MarkdownOnlyToggle.Toggled += MarkdownOnlyToggle_Toggled;
+            await ShowMessageAsync("Unsaved changes", "Save or revert the current file before changing the file filter.");
+            return;
+        }
+
+        try
+        {
+            await RefreshFolderAsync();
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Filter update failed", ex.Message);
+        }
+    }
+
+    private void Theme_Click(object sender, RoutedEventArgs e)
+    {
+        RequestedTheme = ActualTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
+        UpdateThemeButton();
+        RenderPreview();
+    }
+
     private async void FilesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_isChangingSelection || FilesList.SelectedItem is not MarkdownFile selectedFile)
@@ -205,6 +265,26 @@ public sealed partial class MainPage : Page
         FilesSplitView.IsPaneOpen = !FilesSplitView.IsPaneOpen;
     }
 
+    private async Task RefreshFolderAsync()
+    {
+        var currentPath = _currentFile?.FullPath;
+        await LoadFolderAsync(_folderPath);
+
+        var fileToSelect = currentPath is null
+            ? _files.FirstOrDefault()
+            : _allFiles.FirstOrDefault(file => string.Equals(file.FullPath, currentPath, StringComparison.OrdinalIgnoreCase)) ?? _files.FirstOrDefault();
+
+        if (fileToSelect is null)
+        {
+            return;
+        }
+
+        _isChangingSelection = true;
+        FilesList.SelectedItem = fileToSelect;
+        _isChangingSelection = false;
+        await LoadFileAsync(fileToSelect);
+    }
+
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
         if (_currentFile is null || !_isEditing)
@@ -264,6 +344,7 @@ public sealed partial class MainPage : Page
 
     private async Task LoadFolderAsync(string folderPath)
     {
+        _folderPath = folderPath;
         FolderPathText.Text = folderPath;
         _currentFile = null;
         _hasUnsavedChanges = false;
@@ -276,7 +357,9 @@ public sealed partial class MainPage : Page
 
         _allFiles.Clear();
         _files.Clear();
-        foreach (var file in Directory.EnumerateFiles(folderPath, "*.md", SearchOption.AllDirectories)
+        var fileSearchPattern = MarkdownOnlyToggle.IsOn ? "*.md" : "*";
+        foreach (var file in Directory.EnumerateFiles(folderPath, fileSearchPattern, SearchOption.AllDirectories)
+                     .Where(file => !MarkdownOnlyToggle.IsOn || string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                      .OrderBy(file => Path.GetRelativePath(folderPath, file), StringComparer.CurrentCultureIgnoreCase))
         {
             _allFiles.Add(new MarkdownFile(
@@ -369,12 +452,14 @@ public sealed partial class MainPage : Page
     {
         if (_allFiles.Count == 0)
         {
-            return "No .md files in this folder.";
+            return MarkdownOnlyToggle.IsOn
+                ? "No .md files in this folder."
+                : "No files in this folder.";
         }
 
         return string.IsNullOrWhiteSpace(_searchQuery)
             ? ""
-            : "No Markdown files match this search.";
+            : "No files match this search.";
     }
 
     private static bool MatchesSearch(MarkdownFile file, string query)
@@ -406,6 +491,7 @@ public sealed partial class MainPage : Page
         var paragraph = new StringBuilder();
         var code = new StringBuilder();
         var inCodeBlock = false;
+        var codeBlockLanguage = "";
 
         var lines = text.Replace("\r\n", "\n").Split('\n');
         for (var i = 0; i < lines.Length; i++)
@@ -419,8 +505,13 @@ public sealed partial class MainPage : Page
                 FlushParagraph(paragraph);
                 if (inCodeBlock)
                 {
-                    AddCodeBlock(code.ToString().TrimEnd());
+                    AddFencedBlock(code.ToString().TrimEnd(), codeBlockLanguage);
                     code.Clear();
+                    codeBlockLanguage = "";
+                }
+                else
+                {
+                    codeBlockLanguage = trimmed[3..].Trim();
                 }
                 inCodeBlock = !inCodeBlock;
                 continue;
@@ -462,7 +553,7 @@ public sealed partial class MainPage : Page
         FlushParagraph(paragraph);
         if (inCodeBlock && code.Length > 0)
         {
-            AddCodeBlock(code.ToString().TrimEnd());
+            AddFencedBlock(code.ToString().TrimEnd(), codeBlockLanguage);
         }
     }
 
@@ -570,6 +661,69 @@ public sealed partial class MainPage : Page
             Margin = new Thickness(0, 4, 0, 4),
             Child = CreateTextBlock(code, CodeFontFamily, 14, Weight(400), new Thickness(0))
         });
+    }
+
+    private void AddFencedBlock(string code, string language)
+    {
+        if (string.Equals(language, "mermaid", StringComparison.OrdinalIgnoreCase))
+        {
+            AddMermaidDiagram(code);
+            return;
+        }
+
+        AddCodeBlock(code);
+    }
+
+    private void AddMermaidDiagram(string source)
+    {
+        var isDark = ActualTheme == ElementTheme.Dark;
+        var webView = new WebView2
+        {
+            DefaultBackgroundColor = Microsoft.UI.Colors.Transparent,
+            Height = 360,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(0, 4, 0, 8)
+        };
+        webView.WebMessageReceived += (_, args) =>
+        {
+            if (double.TryParse(args.TryGetWebMessageAsString(), out var height))
+            {
+                webView.Height = Math.Clamp(height + 2, 120, 1200);
+            }
+        };
+
+        var html = """
+            <!doctype html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                html, body { margin: 0; padding: 0; background: transparent; color: THEME_TEXT; font-family: 'Segoe UI', sans-serif; }
+                .mermaid { display: flex; justify-content: center; padding: 16px; }
+              </style>
+              <script type="module">
+                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+                mermaid.initialize({ startOnLoad: false, theme: 'THEME_NAME', securityLevel: 'strict' });
+                await mermaid.run({ querySelector: '.mermaid' });
+                requestAnimationFrame(() => requestAnimationFrame(() =>
+                  window.chrome.webview.postMessage(String(document.documentElement.scrollHeight))));
+              </script>
+            </head>
+            <body><pre class="mermaid">MERMAID_SOURCE</pre></body>
+            </html>
+            """;
+        PreviewPanel.Children.Add(new Border
+        {
+            BorderBrush = new SolidColorBrush(Colors.Gray) { Opacity = 0.45 },
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Child = webView
+        });
+
+        webView.NavigateToString(html
+            .Replace("THEME_TEXT", isDark ? "#f5f5f5" : "#1f1f1f", StringComparison.Ordinal)
+            .Replace("THEME_NAME", isDark ? "dark" : "default", StringComparison.Ordinal)
+            .Replace("MERMAID_SOURCE", WebUtility.HtmlEncode(source), StringComparison.Ordinal));
     }
 
     private void AddTable(MarkdownTable table)
@@ -1025,12 +1179,22 @@ public sealed partial class MainPage : Page
         RevertButton.IsEnabled = hasFile;
         DirtyText.Visibility = _hasUnsavedChanges ? Visibility.Visible : Visibility.Collapsed;
         SearchBox.IsEnabled = _allFiles.Count > 0;
+        MarkdownOnlyToggle.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
+        RefreshFolderButton.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         FileCountText.Text = string.IsNullOrWhiteSpace(_searchQuery)
             ? (_files.Count == 1 ? "1 file" : $"{_files.Count} files")
             : $"{_files.Count} / {_allFiles.Count} files";
         EmptyFilesText.Text = emptyFilesText ?? EmptyFilesText.Text;
         EmptyFilesText.Visibility = _files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesList.Visibility = _files.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdateThemeButton()
+    {
+        var isDark = ActualTheme == ElementTheme.Dark;
+        ThemeIcon.Glyph = isDark ? "\uE706" : "\uE708";
+        ToolTipService.SetToolTip(ThemeButton, isDark ? "Switch to light mode" : "Switch to dark mode");
+        AutomationProperties.SetName(ThemeButton, isDark ? "Switch to light mode" : "Switch to dark mode");
     }
 
     private async Task ShowMessageAsync(string title, string message)
