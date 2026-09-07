@@ -60,7 +60,7 @@ public sealed partial class MainPage : Page
             handledEventsToo: true);
         RenderPreview();
         UpdateThemeButton();
-        UpdateUiState("Choose a folder to list files.");
+        UpdateUiState("Choose a folder to list .md files.");
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -170,30 +170,9 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private async void MarkdownOnlyToggle_Toggled(object sender, RoutedEventArgs e)
+    private void FolderTreeToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_folderPath))
-        {
-            return;
-        }
-
-        if (_hasUnsavedChanges)
-        {
-            MarkdownOnlyToggle.Toggled -= MarkdownOnlyToggle_Toggled;
-            MarkdownOnlyToggle.IsOn = !MarkdownOnlyToggle.IsOn;
-            MarkdownOnlyToggle.Toggled += MarkdownOnlyToggle_Toggled;
-            await ShowMessageAsync("Unsaved changes", "Save or revert the current file before changing the file filter.");
-            return;
-        }
-
-        try
-        {
-            await RefreshFolderAsync();
-        }
-        catch (Exception ex)
-        {
-            await ShowMessageAsync("Filter update failed", ex.Message);
-        }
+        UpdateUiState();
     }
 
     private void Theme_Click(object sender, RoutedEventArgs e)
@@ -222,6 +201,25 @@ public sealed partial class MainPage : Page
         if (!Equals(selectedFile, _currentFile))
         {
             await LoadFileAsync(selectedFile);
+        }
+    }
+
+    private async void FolderTree_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
+    {
+        if (args.InvokedItem is not FileTreeEntry { File: not null } entry)
+        {
+            return;
+        }
+
+        if (_hasUnsavedChanges && !Equals(entry.File, _currentFile))
+        {
+            await ShowMessageAsync("Unsaved changes", "Save or revert the current file before opening another file.");
+            return;
+        }
+
+        if (!Equals(entry.File, _currentFile))
+        {
+            await LoadFileAsync(entry.File);
         }
     }
 
@@ -357,9 +355,8 @@ public sealed partial class MainPage : Page
 
         _allFiles.Clear();
         _files.Clear();
-        var fileSearchPattern = MarkdownOnlyToggle.IsOn ? "*.md" : "*";
-        foreach (var file in Directory.EnumerateFiles(folderPath, fileSearchPattern, SearchOption.AllDirectories)
-                     .Where(file => !MarkdownOnlyToggle.IsOn || string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
+        foreach (var file in Directory.EnumerateFiles(folderPath, "*.md", SearchOption.AllDirectories)
+                     .Where(file => string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                      .OrderBy(file => Path.GetRelativePath(folderPath, file), StringComparer.CurrentCultureIgnoreCase))
         {
             _allFiles.Add(new MarkdownFile(
@@ -442,6 +439,8 @@ public sealed partial class MainPage : Page
             _files.Add(file);
         }
 
+        RebuildFolderTree(visibleFiles);
+
         FilesList.SelectedItem = _currentFile is not null && _files.Contains(_currentFile)
             ? _currentFile
             : null;
@@ -452,14 +451,67 @@ public sealed partial class MainPage : Page
     {
         if (_allFiles.Count == 0)
         {
-            return MarkdownOnlyToggle.IsOn
-                ? "No .md files in this folder."
-                : "No files in this folder.";
+            return "No .md files in this folder.";
         }
 
         return string.IsNullOrWhiteSpace(_searchQuery)
             ? ""
-            : "No files match this search.";
+            : "No Markdown files match this search.";
+    }
+
+    private void RebuildFolderTree(IEnumerable<MarkdownFile> files)
+    {
+        FolderTree.RootNodes.Clear();
+
+        var rootLabel = Path.GetFileName(_folderPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (string.IsNullOrWhiteSpace(rootLabel))
+        {
+            rootLabel = _folderPath;
+        }
+
+        var root = new TreeViewNode
+        {
+            Content = new FileTreeEntry(rootLabel),
+            IsExpanded = true
+        };
+        var folderNodes = new Dictionary<string, TreeViewNode>(StringComparer.OrdinalIgnoreCase)
+        {
+            [""] = root
+        };
+
+        foreach (var file in files)
+        {
+            var parent = root;
+            var currentPath = "";
+            var directory = Path.GetDirectoryName(file.RelativePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                foreach (var part in directory.Split(
+                             new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                             StringSplitOptions.RemoveEmptyEntries))
+                {
+                    currentPath = string.IsNullOrEmpty(currentPath) ? part : Path.Combine(currentPath, part);
+                    if (!folderNodes.TryGetValue(currentPath, out var folderNode))
+                    {
+                        folderNode = new TreeViewNode { Content = new FileTreeEntry(part) };
+                        folderNodes[currentPath] = folderNode;
+                        parent.Children.Add(folderNode);
+                    }
+
+                    parent = folderNode;
+                }
+            }
+
+            parent.Children.Add(new TreeViewNode
+            {
+                Content = new FileTreeEntry(file.Name, file)
+            });
+        }
+
+        if (root.Children.Count > 0)
+        {
+            FolderTree.RootNodes.Add(root);
+        }
     }
 
     private static bool MatchesSearch(MarkdownFile file, string query)
@@ -1179,14 +1231,15 @@ public sealed partial class MainPage : Page
         RevertButton.IsEnabled = hasFile;
         DirtyText.Visibility = _hasUnsavedChanges ? Visibility.Visible : Visibility.Collapsed;
         SearchBox.IsEnabled = _allFiles.Count > 0;
-        MarkdownOnlyToggle.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
+        FolderTreeToggle.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         RefreshFolderButton.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         FileCountText.Text = string.IsNullOrWhiteSpace(_searchQuery)
             ? (_files.Count == 1 ? "1 file" : $"{_files.Count} files")
             : $"{_files.Count} / {_allFiles.Count} files";
         EmptyFilesText.Text = emptyFilesText ?? EmptyFilesText.Text;
         EmptyFilesText.Visibility = _files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        FilesList.Visibility = _files.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        FilesList.Visibility = _files.Count > 0 && !FolderTreeToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        FolderTree.Visibility = _files.Count > 0 && FolderTreeToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateThemeButton()
@@ -1225,6 +1278,23 @@ public sealed partial class MainPage : Page
         public string FullPath { get; }
 
         public string Content { get; set; }
+    }
+
+    private sealed class FileTreeEntry
+    {
+        public FileTreeEntry(string label, MarkdownFile? file = null)
+        {
+            Label = label;
+            File = file;
+        }
+
+        public string Label { get; }
+
+        public MarkdownFile? File { get; }
+
+        public string Glyph => File is null ? "\uE8B7" : "\uE8A5";
+
+        public override string ToString() => Label;
     }
 
     private sealed record MarkdownTable(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows);

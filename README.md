@@ -4,7 +4,7 @@ A Windows desktop app for browsing, previewing, and editing Markdown files in a 
 
 ## Overview
 
-Markdown Viewer is a WinUI app built with .NET. It lets you choose a folder, lists files from that folder and its subfolders, and shows each file in two tabs:
+Markdown Viewer is a WinUI app built with .NET. It lets you choose a folder, lists Markdown files from that folder and its subfolders, and shows each file in two tabs:
 
 - `Preview` renders a readable Markdown view.
 - `Code` shows the editable source text.
@@ -14,7 +14,7 @@ The preview supports common Markdown shapes such as headings, paragraphs, lists,
 ## App Workflow
 
 1. Choose a folder. The selected folder path stays visible in the header.
-2. Use **Markdown files only** to switch between `.md` files and every file under that folder, then select a file from the list.
+2. Use **File view** to switch between a flat `.md` list with relative paths and a folder tree. Both views contain Markdown files only.
 3. Read it in the `Preview` tab. Preview text can be selected and copied with the
    standard Windows mouse and keyboard shortcuts. Press `Ctrl+A`, then `Ctrl+C`,
    to copy the complete rendered preview, including tables.

@@ -149,18 +149,18 @@
                             x:Name="SearchBox"
                             Grid.Row="1"
                             Margin="0,0,0,8"
-                            PlaceholderText="Search files or keywords"
+                            PlaceholderText="Search Markdown files or content"
                             TextChanged="SearchBox_TextChanged" />
 
                         <ToggleSwitch
-                            x:Name="MarkdownOnlyToggle"
+                            x:Name="FolderTreeToggle"
                             Grid.Row="2"
-                            Header="Markdown files only"
-                            IsOn="True"
+                            Header="File view"
+                            IsOn="False"
                             Margin="0,0,0,8"
-                            OffContent="All files"
-                            OnContent=".md only"
-                            Toggled="MarkdownOnlyToggle_Toggled" />
+                            OffContent=".md list"
+                            OnContent="Folder tree"
+                            Toggled="FolderTreeToggle_Toggled" />
 
                         <Grid Grid.Row="3">
                             <ListView
@@ -168,12 +168,26 @@
                                 DisplayMemberPath="RelativePath"
                                 SelectionChanged="FilesList_SelectionChanged"
                                 SelectionMode="Single" />
+                            <TreeView
+                                x:Name="FolderTree"
+                                ItemInvoked="FolderTree_ItemInvoked"
+                                SelectionMode="Single"
+                                Visibility="Collapsed">
+                                <TreeView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontSize="12" Glyph="{Binding Glyph}" />
+                                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
                             <TextBlock
                                 x:Name="EmptyFilesText"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                Text="Choose a folder to list files."
+                                Text="Choose a folder to list .md files."
                                 TextAlignment="Center"
                                 TextWrapping="Wrap" />
                         </Grid>
