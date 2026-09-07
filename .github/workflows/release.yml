@@ -1,0 +1,61 @@
+name: Build release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to rebuild
+        required: true
+        default: v1.3.0
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build MSIX package
+        shell: pwsh
+        run: >-
+          dotnet build MarkdownViewerApp/MarkdownViewerApp.csproj
+          -c Release
+          -p:Platform=x64
+          -p:GenerateAppxPackageOnBuild=true
+          -p:AppxBundle=Never
+          -p:AppxPackageDir=${{ github.workspace }}/release-package/
+
+      - name: Prepare release assets
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem '${{ github.workspace }}/release-package' -Filter '*.msix' -Recurse |
+            Where-Object Name -eq 'MarkdownViewerApp_1.3.0.0_x64.msix' |
+            Select-Object -First 1
+          if ($null -eq $package) { throw 'The v1.3.0 MSIX package was not produced.' }
+
+          $assetDirectory = '${{ github.workspace }}/release-assets'
+          New-Item -ItemType Directory -Path $assetDirectory -Force | Out-Null
+          Copy-Item $package.FullName "$assetDirectory/MarkdownViewerApp-v1.3.0-x64.msix"
+          Compress-Archive -Path (Join-Path $package.DirectoryName '*') `
+            -DestinationPath "$assetDirectory/MarkdownViewerApp-v1.3.0-x64-sideload.zip" `
+            -Force
+
+      - name: Replace GitHub release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release upload '${{ inputs.tag }}'
+          '${{ github.workspace }}/release-assets/MarkdownViewerApp-v1.3.0-x64.msix'
+          '${{ github.workspace }}/release-assets/MarkdownViewerApp-v1.3.0-x64-sideload.zip'
+          --clobber
