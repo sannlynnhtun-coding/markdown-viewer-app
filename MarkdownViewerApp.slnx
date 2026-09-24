@@ -3,4 +3,5 @@
     <Platform Solution="Debug|*" Project="x64" />
     <Platform Solution="Release|*" Project="x64" />
   </Project>
+  <Project Path="MarkdownViewerApp.Tests/MarkdownViewerApp.Tests.csproj" />
 </Solution>

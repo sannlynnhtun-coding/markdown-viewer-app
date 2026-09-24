@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\MarkdownViewerApp\MarkdownFileSupport.cs" Link="MarkdownFileSupport.cs" />
+    <Compile Include="..\MarkdownViewerApp\MarkdownFolderTreeParser.cs" Link="MarkdownFolderTreeParser.cs" />
+    <Compile Include="..\MarkdownViewerApp\MermaidWebViewLifecycle.cs" Link="MermaidWebViewLifecycle.cs" />
+    <Content Include="..\MarkdownViewerApp\MainPage.xaml" Link="MainPage.xaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\MarkdownViewerApp\Package.appxmanifest" Link="Package.appxmanifest" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

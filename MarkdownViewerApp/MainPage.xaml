@@ -7,6 +7,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
+    <Page.Resources>
+        <DataTemplate x:Key="PreviewFolderTreeNodeTemplate">
+            <ContentPresenter Content="{Binding Content}" />
+        </DataTemplate>
+    </Page.Resources>
+
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -158,7 +164,7 @@
                             Header="File view"
                             IsOn="False"
                             Margin="0,0,0,8"
-                            OffContent=".md list"
+                            OffContent="Markdown list"
                             OnContent="Folder tree"
                             Toggled="FolderTreeToggle_Toggled" />
 
@@ -187,7 +193,7 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                Text="Choose a folder to list .md files."
+                                Text="Choose a folder to list Markdown files."
                                 TextAlignment="Center"
                                 TextWrapping="Wrap" />
                         </Grid>

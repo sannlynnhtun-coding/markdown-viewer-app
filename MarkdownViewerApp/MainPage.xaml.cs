@@ -60,7 +60,7 @@ public sealed partial class MainPage : Page
             handledEventsToo: true);
         RenderPreview();
         UpdateThemeButton();
-        UpdateUiState("Choose a folder to list .md files.");
+        UpdateUiState("Choose a folder to list Markdown files.");
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -355,8 +355,7 @@ public sealed partial class MainPage : Page
 
         _allFiles.Clear();
         _files.Clear();
-        foreach (var file in Directory.EnumerateFiles(folderPath, "*.md", SearchOption.AllDirectories)
-                     .Where(file => string.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
+        foreach (var file in MarkdownFileSupport.EnumerateFiles(folderPath)
                      .OrderBy(file => Path.GetRelativePath(folderPath, file), StringComparer.CurrentCultureIgnoreCase))
         {
             _allFiles.Add(new MarkdownFile(
@@ -374,9 +373,9 @@ public sealed partial class MainPage : Page
 
     private async Task OpenFileFromShellAsync(string filePath)
     {
-        if (!string.Equals(Path.GetExtension(filePath), ".md", StringComparison.OrdinalIgnoreCase))
+        if (!MarkdownFileSupport.IsMarkdownFile(filePath))
         {
-            throw new InvalidOperationException("Markdown Viewer can only open .md files.");
+            throw new InvalidOperationException("Markdown Viewer can only open .md or .markdown files.");
         }
 
         var fullPath = Path.GetFullPath(filePath);
@@ -451,7 +450,7 @@ public sealed partial class MainPage : Page
     {
         if (_allFiles.Count == 0)
         {
-            return "No .md files in this folder.";
+            return "No Markdown files in this folder.";
         }
 
         return string.IsNullOrWhiteSpace(_searchQuery)
@@ -723,7 +722,95 @@ public sealed partial class MainPage : Page
             return;
         }
 
+        if (MarkdownFolderTreeParser.TryParse(code, out var folderTree))
+        {
+            AddFolderTree(folderTree);
+            return;
+        }
+
         AddCodeBlock(code);
+    }
+
+    private void AddFolderTree(IReadOnlyList<MarkdownFolderTreeItem> items)
+    {
+        var tree = new TreeView
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemTemplate = (DataTemplate)Resources["PreviewFolderTreeNodeTemplate"],
+            SelectionMode = TreeViewSelectionMode.None
+        };
+        var nodesByDepth = new List<TreeViewNode>();
+
+        foreach (var item in items)
+        {
+            var row = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8
+            };
+            row.Children.Add(new FontIcon
+            {
+                FontSize = 13,
+                Glyph = item.IsFolder ? "\uE8B7" : "\uE8A5"
+            });
+            row.Children.Add(CreateTextBlock(
+                item.Label,
+                CodeFontFamily,
+                14,
+                item.IsFolder ? Weight(600) : Weight(400),
+                new Thickness(0)));
+
+            if (!string.IsNullOrWhiteSpace(item.Description))
+            {
+                row.Children.Add(new TextBlock
+                {
+                    Text = item.Description,
+                    FontFamily = PreviewFontFamily,
+                    FontSize = 13,
+                    Foreground = new SolidColorBrush(Colors.Gray),
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+
+            AutomationProperties.SetName(
+                row,
+                string.IsNullOrWhiteSpace(item.Description)
+                    ? item.Label
+                    : $"{item.Label}: {item.Description}");
+
+            var node = new TreeViewNode
+            {
+                Content = row,
+                IsExpanded = true
+            };
+
+            while (nodesByDepth.Count > item.Depth)
+            {
+                nodesByDepth.RemoveAt(nodesByDepth.Count - 1);
+            }
+
+            if (item.Depth == 0)
+            {
+                tree.RootNodes.Add(node);
+            }
+            else
+            {
+                nodesByDepth[item.Depth - 1].Children.Add(node);
+            }
+
+            nodesByDepth.Add(node);
+        }
+
+        PreviewPanel.Children.Add(new Border
+        {
+            BorderBrush = new SolidColorBrush(Colors.Gray) { Opacity = 0.45 },
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Margin = new Thickness(0, 4, 0, 8),
+            Padding = new Thickness(6),
+            Child = tree
+        });
     }
 
     private void AddMermaidDiagram(string source)
@@ -764,18 +851,40 @@ public sealed partial class MainPage : Page
             <body><pre class="mermaid">MERMAID_SOURCE</pre></body>
             </html>
             """;
-        PreviewPanel.Children.Add(new Border
+        var container = new Border
         {
             BorderBrush = new SolidColorBrush(Colors.Gray) { Opacity = 0.45 },
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(6),
             Child = webView
-        });
+        };
+        PreviewPanel.Children.Add(container);
 
-        webView.NavigateToString(html
+        var renderedHtml = html
             .Replace("THEME_TEXT", isDark ? "#f5f5f5" : "#1f1f1f", StringComparison.Ordinal)
             .Replace("THEME_NAME", isDark ? "dark" : "default", StringComparison.Ordinal)
-            .Replace("MERMAID_SOURCE", WebUtility.HtmlEncode(source), StringComparison.Ordinal));
+            .Replace("MERMAID_SOURCE", WebUtility.HtmlEncode(source), StringComparison.Ordinal);
+        _ = InitializeMermaidDiagramAsync(webView, container, renderedHtml);
+    }
+
+    private async Task InitializeMermaidDiagramAsync(WebView2 webView, Border container, string html)
+    {
+        try
+        {
+            await MermaidWebViewLifecycle.NavigateAsync(
+                async () => await webView.EnsureCoreWebView2Async(),
+                webView.NavigateToString,
+                html);
+        }
+        catch (Exception ex)
+        {
+            container.Child = CreateTextBlock(
+                $"Mermaid diagram could not be rendered: {ex.Message}",
+                PreviewFontFamily,
+                14,
+                Weight(400),
+                new Thickness(12));
+        }
     }
 
     private void AddTable(MarkdownTable table)

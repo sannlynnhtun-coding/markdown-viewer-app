@@ -1,6 +1,6 @@
 # Markdown Viewer
 
-A Windows desktop app for browsing, previewing, and editing Markdown files in a selected folder. Once installed, it also appears in File Explorer's **Open with** menu for `.md` files.
+A Windows desktop app for browsing, previewing, and editing Markdown files in a selected folder. Once installed, it also appears in File Explorer's **Open with** menu for `.md` and `.markdown` files.
 
 ## Overview
 
@@ -9,12 +9,12 @@ Markdown Viewer is a WinUI app built with .NET. It lets you choose a folder, lis
 - `Preview` renders a readable Markdown view.
 - `Code` shows the editable source text.
 
-The preview supports common Markdown shapes such as headings, paragraphs, lists, block quotes, horizontal rules, fenced code blocks, tables, inline code markers, emphasis markers, links, and Mermaid diagrams.
+The preview supports common Markdown shapes such as headings, paragraphs, lists, block quotes, horizontal rules, fenced code blocks, project folder trees, tables, inline code markers, emphasis markers, links, and Mermaid diagrams.
 
 ## App Workflow
 
 1. Choose a folder. The selected folder path stays visible in the header.
-2. Use **File view** to switch between a flat `.md` list with relative paths and a folder tree. Both views contain Markdown files only.
+2. Use **File view** to switch between a flat Markdown file list with relative paths and a folder tree. Both views contain `.md` and `.markdown` files only.
 3. Read it in the `Preview` tab. Preview text can be selected and copied with the
    standard Windows mouse and keyboard shortcuts. Press `Ctrl+A`, then `Ctrl+C`,
    to copy the complete rendered preview, including tables.
@@ -31,7 +31,7 @@ flowchart LR
 ```
 ````
 
-You can also right-click an `.md` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
+You can also right-click an `.md` or `.markdown` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
 
 The app blocks folder changes and file switches while there are unsaved edits, so changes are not lost by accident.
 
