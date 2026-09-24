@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -13,6 +12,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Text;
@@ -22,7 +22,6 @@ namespace MarkdownViewerApp;
 
 public sealed partial class MainPage : Page
 {
-    private static readonly Regex LinkPattern = new(@"\[([^\]]+)\]\(([^)]+)\)", RegexOptions.Compiled);
     private static readonly FontFamily PreviewFontFamily = new("Myanmar Text, Segoe UI");
     private static readonly FontFamily CodeFontFamily = new("Myanmar Text, Consolas");
     private static readonly SolidColorBrush SearchMatchBrush = new(Colors.OrangeRed);
@@ -598,7 +597,7 @@ public sealed partial class MainPage : Page
             {
                 paragraph.Append(' ');
             }
-            paragraph.Append(CleanInline(line.Trim()));
+            paragraph.Append(line.Trim());
         }
 
         FlushParagraph(paragraph);
@@ -617,7 +616,7 @@ public sealed partial class MainPage : Page
             return false;
         }
 
-        AddText(CleanInline(trimmedStart[(level + 1)..]), level switch
+        AddText(trimmedStart[(level + 1)..], level switch
         {
             1 => 28,
             2 => 24,
@@ -668,7 +667,7 @@ public sealed partial class MainPage : Page
             return false;
         }
 
-        AddText($"- {CleanInline(trimmed[markerLength..])}", 14, Weight(400), new Thickness(12, 0, 0, 0));
+        AddText($"- {trimmed[markerLength..]}", 14, Weight(400), new Thickness(12, 0, 0, 0));
         return true;
     }
 
@@ -685,7 +684,7 @@ public sealed partial class MainPage : Page
             BorderThickness = new Thickness(4, 0, 0, 0),
             Margin = new Thickness(0, 4, 0, 4),
             Padding = new Thickness(10, 0, 0, 0),
-            Child = CreateTextBlock(CleanInline(trimmed[2..]), PreviewFontFamily, 14, Weight(400), new Thickness(0))
+            Child = CreateTextBlock(trimmed[2..], PreviewFontFamily, 14, Weight(400), new Thickness(0))
         });
         return true;
     }
@@ -710,7 +709,7 @@ public sealed partial class MainPage : Page
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(12),
             Margin = new Thickness(0, 4, 0, 4),
-            Child = CreateTextBlock(code, CodeFontFamily, 14, Weight(400), new Thickness(0))
+            Child = CreateTextBlock(code, CodeFontFamily, 14, Weight(400), new Thickness(0), parseMarkdown: false)
         });
     }
 
@@ -758,7 +757,8 @@ public sealed partial class MainPage : Page
                 CodeFontFamily,
                 14,
                 item.IsFolder ? Weight(600) : Weight(400),
-                new Thickness(0)));
+                new Thickness(0),
+                parseMarkdown: false));
 
             if (!string.IsNullOrWhiteSpace(item.Description))
             {
@@ -883,7 +883,8 @@ public sealed partial class MainPage : Page
                 PreviewFontFamily,
                 14,
                 Weight(400),
-                new Thickness(12));
+                new Thickness(12),
+                parseMarkdown: false);
         }
     }
 
@@ -1130,8 +1131,18 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private TextBlock CreateTextBlock(string text, FontFamily fontFamily, double fontSize, FontWeight weight, Thickness margin)
+    private TextBlock CreateTextBlock(
+        string text,
+        FontFamily fontFamily,
+        double fontSize,
+        FontWeight weight,
+        Thickness margin,
+        bool parseMarkdown = true)
     {
+        var segments = parseMarkdown
+            ? MarkdownInlineParser.Parse(text)
+            : [new MarkdownInlineSegment(text)];
+        var displayText = string.Concat(segments.Select(segment => segment.Text));
         var textBlock = new TextBlock
         {
             FontFamily = fontFamily,
@@ -1140,19 +1151,34 @@ public sealed partial class MainPage : Page
             IsTextSelectionEnabled = true,
             LineHeight = LineHeight(fontSize),
             Margin = margin,
-            Tag = text,
+            Tag = displayText,
             TextWrapping = TextWrapping.Wrap
         };
 
-        SetHighlightedText(textBlock, text);
+        foreach (var segment in segments)
+        {
+            if (segment.LinkTarget is null)
+            {
+                AddHighlightedRuns(textBlock.Inlines, segment.Text);
+                continue;
+            }
+
+            var hyperlink = new Hyperlink();
+            AddHighlightedRuns(hyperlink.Inlines, segment.Text);
+            var linkTarget = segment.LinkTarget;
+            hyperlink.Click += async (_, _) => await OpenLinkAsync(linkTarget);
+            ToolTipService.SetToolTip(hyperlink, linkTarget);
+            textBlock.Inlines.Add(hyperlink);
+        }
+
         return textBlock;
     }
 
-    private void SetHighlightedText(TextBlock textBlock, string text)
+    private void AddHighlightedRuns(InlineCollection inlines, string text)
     {
         if (string.IsNullOrWhiteSpace(_searchQuery))
         {
-            textBlock.Text = text;
+            inlines.Add(new Run { Text = text });
             return;
         }
 
@@ -1167,10 +1193,10 @@ public sealed partial class MainPage : Page
 
             if (index > start)
             {
-                textBlock.Inlines.Add(new Run { Text = text[start..index] });
+                inlines.Add(new Run { Text = text[start..index] });
             }
 
-            textBlock.Inlines.Add(new Run
+            inlines.Add(new Run
             {
                 Text = text[index..(index + _searchQuery.Length)],
                 Foreground = SearchMatchBrush,
@@ -1181,14 +1207,89 @@ public sealed partial class MainPage : Page
 
         if (start == 0)
         {
-            textBlock.Text = text;
+            inlines.Add(new Run { Text = text });
             return;
         }
 
         if (start < text.Length)
         {
-            textBlock.Inlines.Add(new Run { Text = text[start..] });
+            inlines.Add(new Run { Text = text[start..] });
         }
+    }
+
+    private async Task OpenLinkAsync(string linkTarget)
+    {
+        try
+        {
+            if (Uri.TryCreate(linkTarget, UriKind.Absolute, out var uri) &&
+                !uri.IsFile &&
+                uri.Scheme is "http" or "https" or "mailto")
+            {
+                await Launcher.LaunchUriAsync(uri);
+                return;
+            }
+
+            var path = ResolveLocalLinkPath(linkTarget);
+            if (path is not null && File.Exists(path))
+            {
+                var file = await StorageFile.GetFileFromPathAsync(path);
+                await Launcher.LaunchFileAsync(file);
+                return;
+            }
+
+            if (path is not null && Directory.Exists(path))
+            {
+                var folder = await StorageFolder.GetFolderFromPathAsync(path);
+                await Launcher.LaunchFolderAsync(folder);
+                return;
+            }
+
+            await ShowMessageAsync("Link unavailable", $"The link target could not be found:\n{linkTarget}");
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Link unavailable", ex.Message);
+        }
+    }
+
+    private string? ResolveLocalLinkPath(string linkTarget)
+    {
+        if (_currentFile is null || linkTarget.StartsWith('#'))
+        {
+            return null;
+        }
+
+        var pathPart = linkTarget;
+        var suffixIndex = pathPart.IndexOfAny(['?', '#']);
+        if (suffixIndex >= 0)
+        {
+            pathPart = pathPart[..suffixIndex];
+        }
+
+        pathPart = Uri.UnescapeDataString(pathPart);
+        if (pathPart.Length == 0)
+        {
+            return null;
+        }
+
+        var documentFolder = Path.GetDirectoryName(_currentFile.FullPath);
+        if (documentFolder is null)
+        {
+            return null;
+        }
+
+        if (pathPart.StartsWith('/') || pathPart.StartsWith('\\'))
+        {
+            pathPart = pathPart.TrimStart('/', '\\');
+        }
+        else if (Path.IsPathRooted(pathPart))
+        {
+            return Path.GetFullPath(pathPart);
+        }
+
+        return Path.GetFullPath(Path.Combine(
+            documentFolder,
+            pathPart.Replace('/', Path.DirectorySeparatorChar)));
     }
 
     private static FontWeight Weight(ushort value)
@@ -1266,7 +1367,7 @@ public sealed partial class MainPage : Page
             trimmed = trimmed[..^1];
         }
 
-        return trimmed.Split('|').Select(cell => CleanInline(cell.Trim())).ToList();
+        return trimmed.Split('|').Select(cell => cell.Trim()).ToList();
     }
 
     private static bool IsTableSeparatorCell(string cell)
@@ -1317,15 +1418,6 @@ public sealed partial class MainPage : Page
         }
     }
 #endif
-
-    private static string CleanInline(string text)
-    {
-        text = LinkPattern.Replace(text, "$1 ($2)");
-        return text
-            .Replace("**", "")
-            .Replace("__", "")
-            .Replace("`", "");
-    }
 
     private void UpdateUiState(string? emptyFilesText = null)
     {
