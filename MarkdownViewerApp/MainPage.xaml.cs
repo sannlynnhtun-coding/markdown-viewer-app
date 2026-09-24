@@ -421,7 +421,13 @@ public sealed partial class MainPage : Page
         _isLoadingFile = false;
         ContentTabs.SelectedIndex = 0;
         RenderPreview(markdown);
+        ResetPreviewScrollToTop();
         UpdateUiState();
+    }
+
+    private void ResetPreviewScrollToTop()
+    {
+        PreviewScrollViewer.ChangeView(null, 0, null, true);
     }
 
     private void ApplySearch()
