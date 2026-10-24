@@ -170,9 +170,12 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void FolderTreeToggle_Toggled(object sender, RoutedEventArgs e)
+    private void FileViewSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        UpdateUiState();
+        if (ContentTabs is not null)
+        {
+            UpdateUiState();
+        }
     }
 
     private void Theme_Click(object sender, RoutedEventArgs e)
@@ -1436,18 +1439,30 @@ public sealed partial class MainPage : Page
         DocumentPathText.Text = _currentFile?.RelativePath ?? "";
         DocumentPathText.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;
         ToolTipService.SetToolTip(DocumentPathText, _currentFile?.FullPath);
+        ToolTipService.SetToolTip(FolderPathText, _folderPath);
+        WelcomePanel.Visibility = hasFile ? Visibility.Collapsed : Visibility.Visible;
+        DocumentHeader.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;
+        ContentTabs.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;
+        WelcomeTitleText.Text = string.IsNullOrWhiteSpace(_folderPath)
+            ? "Your Markdown, ready to read"
+            : "Choose a document";
+        WelcomeDescriptionText.Text = string.IsNullOrWhiteSpace(_folderPath)
+            ? "Open a folder to browse your files, read a document, or edit its source."
+            : _allFiles.Count == 0
+                ? "This folder has no Markdown files. Open another folder to get started."
+                : "Select a file from the sidebar to read its preview or edit its source.";
         DirtyText.Text = _isSaving ? "Saving…" : _hasUnsavedChanges ? "Unsaved changes" : "Saved";
         DirtyText.Visibility = hasFile && (_hasUnsavedChanges || _isEditing) ? Visibility.Visible : Visibility.Collapsed;
         SearchBox.IsEnabled = _allFiles.Count > 0;
-        FolderTreeToggle.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
+        FileViewSelector.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         RefreshFolderButton.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         FileCountText.Text = string.IsNullOrWhiteSpace(_searchQuery)
             ? (_files.Count == 1 ? "1 file" : $"{_files.Count} files")
             : $"{_files.Count} / {_allFiles.Count} files";
         EmptyFilesText.Text = emptyFilesText ?? EmptyFilesText.Text;
         EmptyFilesText.Visibility = _files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        FilesList.Visibility = _files.Count > 0 && !FolderTreeToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
-        FolderTree.Visibility = _files.Count > 0 && FolderTreeToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        FilesList.Visibility = _files.Count > 0 && FileViewSelector.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        FolderTree.Visibility = _files.Count > 0 && FileViewSelector.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateThemeButton()

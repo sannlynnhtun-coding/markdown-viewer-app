@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8" ?>
 <Page
     x:Class="MarkdownViewerApp.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -6,7 +5,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-
     <Page.Resources>
         <DataTemplate x:Key="PreviewFolderTreeNodeTemplate">
             <ContentPresenter Content="{Binding Content}" />
@@ -14,243 +12,201 @@
     </Page.Resources>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="FilesSplitView.DisplayMode" Value="Overlay" />
+                        <Setter Target="FilesSplitView.IsPaneOpen" Value="False" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="900" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="FilesSplitView.DisplayMode" Value="Inline" />
+                        <Setter Target="FilesSplitView.IsPaneOpen" Value="True" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Padding="16,12" ColumnSpacing="12">
+        <Grid Padding="16,10" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-
-            <Button
-                x:Name="ToggleSidebarButton"
-                Grid.Column="0"
-                Click="ToggleSidebar_Click"
-                AutomationProperties.Name="Toggle files sidebar"
-                ToolTipService.ToolTip="Toggle files sidebar">
-                <FontIcon FontSize="14" Glyph="&#xE700;" />
+            <Button x:Name="ToggleSidebarButton" Click="ToggleSidebar_Click"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    AutomationProperties.Name="Toggle files sidebar" ToolTipService.ToolTip="Toggle files sidebar">
+                <FontIcon FontSize="16" Glyph="&#xE700;" />
             </Button>
-
-            <Button
-                x:Name="ChooseFolderButton"
-                Grid.Column="1"
-                Click="ChooseFolder_Click"
-                ToolTipService.ToolTip="Choose folder">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="14" Glyph="&#xE838;" />
-                    <TextBlock Text="Choose Folder" />
-                </StackPanel>
-            </Button>
-
-            <TextBlock
-                x:Name="FolderPathText"
-                Grid.Column="2"
-                VerticalAlignment="Center"
-                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                Text="No folder selected"
-                TextTrimming="CharacterEllipsis" />
-
-            <Button
-                x:Name="RefreshFolderButton"
-                Grid.Column="3"
-                Click="RefreshFolder_Click"
-                IsEnabled="False"
-                ToolTipService.ToolTip="Refresh files in this folder">
-                <FontIcon FontSize="14" Glyph="&#xE72C;" />
-            </Button>
-
-            <Button
-                x:Name="EditButton"
-                Grid.Column="5"
-                Click="Edit_Click"
-                IsEnabled="False"
-                ToolTipService.ToolTip="Edit">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="14" Glyph="&#xE70F;" />
-                    <TextBlock Text="Edit" />
-                </StackPanel>
-            </Button>
-
-            <Button
-                x:Name="SaveButton"
-                Grid.Column="6"
-                Click="Save_Click"
-                IsEnabled="False"
-                Visibility="Collapsed"
-                ToolTipService.ToolTip="Save">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="14" Glyph="&#xE74E;" />
-                    <TextBlock Text="Save" />
-                </StackPanel>
-            </Button>
-
-            <Button
-                x:Name="RevertButton"
-                Grid.Column="7"
-                Click="Revert_Click"
-                IsEnabled="False"
-                Visibility="Collapsed"
-                ToolTipService.ToolTip="Discard unsaved changes">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="14" Glyph="&#xE7A7;" />
-                    <TextBlock Text="Discard changes" />
-                </StackPanel>
-            </Button>
-
-            <Button
-                x:Name="ThemeButton"
-                Grid.Column="8"
-                Click="Theme_Click"
-                ToolTipService.ToolTip="Switch to dark mode">
-                <FontIcon x:Name="ThemeIcon" FontSize="14" Glyph="&#xE706;" />
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="Workspace" FontWeight="SemiBold" />
+                <TextBlock x:Name="FolderPathText" Text="Open a folder to get started" FontSize="12"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <Button x:Name="ThemeButton" Grid.Column="2" Click="Theme_Click"
+                    Style="{StaticResource SubtleButtonStyle}" ToolTipService.ToolTip="Switch to dark mode">
+                <FontIcon x:Name="ThemeIcon" FontSize="16" Glyph="&#xE706;" />
             </Button>
         </Grid>
 
-        <SplitView
-            x:Name="FilesSplitView"
-            Grid.Row="1"
-            CompactPaneLength="0"
-            DisplayMode="Inline"
-            IsPaneOpen="True"
-            OpenPaneLength="320"
-            PanePlacement="Left">
+        <SplitView x:Name="FilesSplitView" Grid.Row="1" CompactPaneLength="0" DisplayMode="Inline"
+                   IsPaneOpen="True" OpenPaneLength="300" PanePlacement="Left"
+                   PaneBackground="{ThemeResource LayerFillColorDefaultBrush}">
             <SplitView.Pane>
-                <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
-                    <Grid Padding="12">
+                <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,1,0">
+                    <Grid Padding="16" RowSpacing="16">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-
-                        <Grid Margin="0,0,0,8">
-                            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Files" />
-                            <TextBlock
-                                x:Name="FileCountText"
-                                HorizontalAlignment="Right"
-                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                Text="0 files" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="ChooseFolderButton" Click="ChooseFolder_Click" HorizontalAlignment="Stretch">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon FontSize="16" Glyph="&#xE838;" />
+                                    <TextBlock Text="Open folder" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="RefreshFolderButton" Grid.Column="1" Click="RefreshFolder_Click" IsEnabled="False"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    AutomationProperties.Name="Refresh files" ToolTipService.ToolTip="Refresh files">
+                                <FontIcon FontSize="16" Glyph="&#xE72C;" />
+                            </Button>
                         </Grid>
-
-                        <TextBox
-                            x:Name="SearchBox"
-                            Grid.Row="1"
-                            Margin="0,0,0,8"
-                            PlaceholderText="Search Markdown files or content"
-                            TextChanged="SearchBox_TextChanged" />
-
-                        <ToggleSwitch
-                            x:Name="FolderTreeToggle"
-                            Grid.Row="2"
-                            Header="File view"
-                            IsOn="False"
-                            Margin="0,0,0,8"
-                            OffContent="Markdown list"
-                            OnContent="Folder tree"
-                            Toggled="FolderTreeToggle_Toggled" />
-
-                        <Grid Grid.Row="3">
-                            <ListView
-                                x:Name="FilesList"
-                                DisplayMemberPath="RelativePath"
-                                SelectionChanged="FilesList_SelectionChanged"
-                                SelectionMode="Single" />
-                            <TreeView
-                                x:Name="FolderTree"
-                                ItemInvoked="FolderTree_ItemInvoked"
-                                SelectionMode="Single"
-                                Visibility="Collapsed">
+                        <TextBox x:Name="SearchBox" Grid.Row="1" PlaceholderText="Search files and content"
+                                 AutomationProperties.Name="Search Markdown files and content" TextChanged="SearchBox_TextChanged" />
+                        <Grid Grid.Row="2">
+                            <TextBlock Text="Markdown files" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock x:Name="FileCountText" Text="0 files" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+                        <ComboBox x:Name="FileViewSelector" Grid.Row="3" HorizontalAlignment="Stretch" SelectedIndex="0"
+                                  AutomationProperties.Name="File view" SelectionChanged="FileViewSelector_SelectionChanged">
+                            <ComboBoxItem Content="List view" />
+                            <ComboBoxItem Content="Folder tree" />
+                        </ComboBox>
+                        <Grid Grid.Row="4">
+                            <ListView x:Name="FilesList" SelectionChanged="FilesList_SelectionChanged" SelectionMode="Single"
+                                      AutomationProperties.Name="Markdown files">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,8" ColumnSpacing="10" ToolTipService.ToolTip="{Binding RelativePath}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="&#xE8A5;" FontSize="16" VerticalAlignment="Top" Margin="0,3,0,0"
+                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <StackPanel Grid.Column="1" Spacing="3">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding RelativePath}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <TreeView x:Name="FolderTree" ItemInvoked="FolderTree_ItemInvoked" SelectionMode="Single"
+                                      AutomationProperties.Name="Markdown folder tree" Visibility="Collapsed">
                                 <TreeView.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <FontIcon FontSize="12" Glyph="{Binding Glyph}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8" ToolTipService.ToolTip="{Binding Label}">
+                                            <FontIcon FontSize="14" Glyph="{Binding Glyph}" />
                                             <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>
-                            <TextBlock
-                                x:Name="EmptyFilesText"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                Text="Choose a folder to list Markdown files."
-                                TextAlignment="Center"
-                                TextWrapping="Wrap" />
+                            <TextBlock x:Name="EmptyFilesText" Text="Choose a folder to list Markdown files."
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                       TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </Grid>
                     </Grid>
                 </Border>
             </SplitView.Pane>
 
             <SplitView.Content>
-                <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                        BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Grid Padding="24,16" ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <Grid x:Name="DocumentHeader" Padding="24,18" RowSpacing="12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
                             <StackPanel Spacing="4">
-                                <TextBlock x:Name="DocumentNameText" Text="Select a Markdown file"
-                                           FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="DocumentPathText" TextTrimming="CharacterEllipsis"
-                                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" />
+                                <TextBlock x:Name="DocumentNameText" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="DocumentPathText" FontSize="12" TextTrimming="CharacterEllipsis"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                            <TextBlock x:Name="DirtyText" Grid.Column="1" VerticalAlignment="Center"
-                                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                                       AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="DirtyText" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
+                                <CommandBar Grid.Column="1" Background="Transparent" HorizontalAlignment="Right" DefaultLabelPosition="Right">
+                                    <AppBarButton x:Name="EditButton" Label="Edit source" Icon="Edit" Click="Edit_Click" IsEnabled="False" />
+                                    <AppBarButton x:Name="SaveButton" Label="Save" Icon="Save" Click="Save_Click" IsEnabled="False"
+                                                  Visibility="Collapsed" />
+                                    <AppBarButton x:Name="RevertButton" Label="Discard changes" Icon="Undo" Click="Revert_Click"
+                                                  IsEnabled="False" Visibility="Collapsed" />
+                                </CommandBar>
+                            </Grid>
                         </Grid>
-                    <TabView
-                        x:Name="ContentTabs"
-                        Grid.Row="1"
-                        CanDragTabs="False"
-                        CanReorderTabs="False"
-                        IsAddTabButtonVisible="False"
-                        SelectedIndex="0">
-                        <TabViewItem Header="Preview" IsClosable="False">
-                            <ScrollViewer
-                                x:Name="PreviewScrollViewer"
-                                AutomationProperties.Name="Markdown preview"
-                                Padding="24"
-                                VerticalScrollBarVisibility="Auto">
-                                <Grid>
-                                    <StackPanel x:Name="PreviewPanel" Spacing="10" MaxWidth="860" HorizontalAlignment="Stretch" />
-                                </Grid>
-                            </ScrollViewer>
-                        </TabViewItem>
-                        <TabViewItem Header="Code" IsClosable="False">
-                            <TextBox
-                                x:Name="EditorBox"
-                                AcceptsReturn="True"
-                                FontFamily="Myanmar Text, Consolas"
-                                FontSize="14"
-                                IsEnabled="False"
-                                IsReadOnly="True"
-                                IsSpellCheckEnabled="False"
-                                IsTextPredictionEnabled="False"
-                                Margin="12"
-                                PlaceholderText="Select a Markdown file"
-                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                TextChanged="EditorBox_TextChanged"
-                                TextWrapping="NoWrap" />
-                        </TabViewItem>
-                    </TabView>
+                        <TabView x:Name="ContentTabs" Grid.Row="1" CanDragTabs="False" CanReorderTabs="False"
+                                 IsAddTabButtonVisible="False" SelectedIndex="0">
+                            <TabViewItem Header="Preview" IsClosable="False">
+                                <ScrollViewer x:Name="PreviewScrollViewer" AutomationProperties.Name="Markdown preview"
+                                              Padding="32,24,32,48" VerticalScrollBarVisibility="Auto">
+                                    <Grid>
+                                        <StackPanel x:Name="PreviewPanel" Spacing="12" MaxWidth="860" HorizontalAlignment="Stretch" />
+                                    </Grid>
+                                </ScrollViewer>
+                            </TabViewItem>
+                            <TabViewItem Header="Source" IsClosable="False">
+                                <TextBox x:Name="EditorBox" AcceptsReturn="True" FontFamily="Myanmar Text, Consolas" FontSize="14"
+                                         AutomationProperties.Name="Markdown source editor" IsEnabled="False" IsReadOnly="True"
+                                         IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" Margin="16" Padding="16"
+                                         PlaceholderText="Select a Markdown file" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto" TextChanged="EditorBox_TextChanged" TextWrapping="NoWrap" />
+                            </TabViewItem>
+                        </TabView>
+                        <Grid x:Name="WelcomePanel" Grid.RowSpan="2" Padding="32" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                            <StackPanel MaxWidth="380" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+                                <FontIcon Glyph="&#xE8A5;" FontSize="40" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="WelcomeTitleText" Text="Your Markdown, ready to read" FontSize="24" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" TextAlignment="Center" />
+                                <TextBlock x:Name="WelcomeDescriptionText" Text="Open a folder to browse your files, read a document, or edit its source."
+                                           TextWrapping="Wrap" TextAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <Button Content="Open folder" Click="ChooseFolder_Click" HorizontalAlignment="Center"
+                                        Style="{StaticResource AccentButtonStyle}" />
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Border>
             </SplitView.Content>
