@@ -215,7 +215,10 @@
                                  IsAddTabButtonVisible="False" TabWidthMode="SizeToContent" SelectedIndex="0">
                             <TabViewItem Header="Preview" IsClosable="False">
                                 <ScrollViewer x:Name="PreviewScrollViewer" AutomationProperties.Name="Markdown preview"
-                                              Padding="16,12,16,24" VerticalScrollBarVisibility="Auto">
+                                              Padding="16,12,16,24" VerticalScrollBarVisibility="Auto"
+                                              ZoomMode="Enabled" MinZoomFactor="0.75" MaxZoomFactor="2.5"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              ToolTipService.ToolTip="Hold Ctrl and scroll to zoom the preview">
                                     <Grid>
                                         <StackPanel x:Name="PreviewPanel" Spacing="6" MaxWidth="860" HorizontalAlignment="Stretch" />
                                     </Grid>

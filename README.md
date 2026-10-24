@@ -39,6 +39,7 @@ The compact document header groups the filename, relative path, edit status, and
 The sidebar contains folder actions, search, and file navigation. On narrow windows it opens over the document using the sidebar button. The welcome screen guides you to open a folder or choose a document.
 The app starts maximized and uses the main Markdown Viewer logo for the welcome screen, title bar, executable, and Windows package visuals.
 Use the information button beside the theme button to open **About Markdown Viewer**, with the running app version, an overview of features, author credit, and a link to the GitHub repository. **Check for updates** opens the latest GitHub release in your browser.
+Hold **Ctrl** and scroll the mouse wheel over the preview to zoom in or out (75%–250%). Normal scrolling still moves through the document; the source editor and toolbar stay at their usual size.
 
 ## Development Workflow
 
