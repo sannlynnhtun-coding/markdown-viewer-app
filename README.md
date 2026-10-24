@@ -14,7 +14,7 @@ The preview supports common Markdown shapes such as headings, paragraphs, lists,
 ## App Workflow
 
 1. Choose a folder. The selected folder path stays visible in the header.
-2. Use the sidebar's **List view / Folder tree** selector to change how files are shown. List rows show filenames and relative paths. Both views contain `.md` and `.markdown` files only.
+2. Files open in **Folder tree** view by default. Use the sidebar's **List view / Folder tree** selector to change how files are shown. List rows show filenames and relative paths. Both views contain `.md` and `.markdown` files only.
 3. Read it in the `Preview` tab. Preview text can be selected and copied with the
    standard Windows mouse and keyboard shortcuts. Press `Ctrl+A`, then `Ctrl+C`,
    to copy the complete rendered preview, including tables.

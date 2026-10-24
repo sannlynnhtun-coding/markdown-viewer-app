@@ -98,7 +98,7 @@
                             <TextBlock x:Name="FileCountText" Text="0 files" HorizontalAlignment="Right" VerticalAlignment="Center"
                                        FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </Grid>
-                        <ComboBox x:Name="FileViewSelector" Grid.Row="3" HorizontalAlignment="Stretch" SelectedIndex="0"
+                        <ComboBox x:Name="FileViewSelector" Grid.Row="3" HorizontalAlignment="Stretch" SelectedIndex="1"
                                   AutomationProperties.Name="File view" SelectionChanged="FileViewSelector_SelectionChanged">
                             <ComboBoxItem Content="List view" />
                             <ComboBoxItem Content="Folder tree" />
