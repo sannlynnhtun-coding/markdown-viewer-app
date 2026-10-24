@@ -209,7 +209,8 @@ public sealed partial class MainPage : Page
 
     private async void FolderTree_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
     {
-        if (args.InvokedItem is not FileTreeEntry { File: not null } entry)
+        var item = args.InvokedItem is TreeViewNode node ? node.Content : args.InvokedItem;
+        if (item is not FileTreeEntry { File: not null } entry)
         {
             return;
         }

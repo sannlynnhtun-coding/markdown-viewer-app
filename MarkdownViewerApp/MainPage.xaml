@@ -128,9 +128,9 @@
                                       AutomationProperties.Name="Markdown folder tree" Visibility="Collapsed">
                                 <TreeView.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="8" ToolTipService.ToolTip="{Binding Label}">
-                                            <FontIcon FontSize="14" Glyph="{Binding Glyph}" />
-                                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8" ToolTipService.ToolTip="{Binding Content.Label}">
+                                            <FontIcon FontSize="14" Glyph="{Binding Content.Glyph}" />
+                                            <TextBlock Text="{Binding Content.Label}" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </TreeView.ItemTemplate>
