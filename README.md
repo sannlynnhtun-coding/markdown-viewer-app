@@ -38,6 +38,7 @@ The app blocks folder changes and file switches while there are unsaved edits, s
 The document header shows the current filename, relative path, and edit status. Preview uses a centered reading column up to 860 pixels wide.
 The sidebar contains folder actions, search, and file navigation. On narrow windows it opens over the document using the sidebar button. The welcome screen guides you to open a folder or choose a document.
 The app starts maximized and uses the main Markdown Viewer logo for the welcome screen, title bar, executable, and Windows package visuals.
+Use the information button beside the theme button to open **About Markdown Viewer**, with an overview of features, author credit, and a link to the GitHub repository.
 
 ## Development Workflow
 

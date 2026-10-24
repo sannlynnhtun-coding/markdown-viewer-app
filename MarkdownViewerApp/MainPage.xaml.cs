@@ -178,6 +178,13 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private async void About_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = (ContentDialog)Resources["AboutDialog"];
+        dialog.XamlRoot = XamlRoot;
+        await dialog.ShowAsync();
+    }
+
     private void Theme_Click(object sender, RoutedEventArgs e)
     {
         RequestedTheme = ActualTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;

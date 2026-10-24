@@ -6,6 +6,27 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Page.Resources>
+        <ContentDialog x:Key="AboutDialog" Title="About Markdown Viewer" CloseButtonText="Close"
+                       DefaultButton="Close">
+            <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="16">
+                    <Image Source="Assets/Square150x150Logo.scale-200.png" Width="64" Height="64"
+                           HorizontalAlignment="Left" AutomationProperties.Name="Markdown Viewer logo" />
+                    <TextBlock Text="Read and edit Markdown files on Windows." FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Open a folder to browse .md and .markdown files, including subfolders. Use folder tree or list view, and search filenames and content."
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Preview formatted text, tables, code blocks, links, folder trees, and Mermaid diagrams. Select and copy preview text, or switch between light and dark mode."
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Edit a document's source, save your changes, or discard them with confirmation. Cancel lets you leave editing safely. You can also open Markdown files from File Explorer."
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Created by Sann Lynn Htun" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <HyperlinkButton Content="View source on GitHub" HorizontalAlignment="Left" Padding="0"
+                                     NavigateUri="https://github.com/sannlynnhtun-coding/markdown-viewer-app"
+                                     ToolTipService.ToolTip="https://github.com/sannlynnhtun-coding/markdown-viewer-app"
+                                     AutomationProperties.Name="Open the Markdown Viewer GitHub repository" />
+                </StackPanel>
+            </ScrollViewer>
+        </ContentDialog>
         <DataTemplate x:Key="PreviewFolderTreeNodeTemplate">
             <ContentPresenter Content="{Binding Content}" />
         </DataTemplate>
@@ -44,6 +65,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Button x:Name="ToggleSidebarButton" Click="ToggleSidebar_Click"
                     Style="{StaticResource SubtleButtonStyle}"
@@ -55,7 +77,12 @@
                 <TextBlock x:Name="FolderPathText" Text="Open a folder to get started" FontSize="12"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <Button x:Name="ThemeButton" Grid.Column="2" Click="Theme_Click"
+            <Button x:Name="AboutButton" Grid.Column="2" Click="About_Click"
+                    Style="{StaticResource SubtleButtonStyle}" ToolTipService.ToolTip="About Markdown Viewer"
+                    AutomationProperties.Name="About Markdown Viewer">
+                <FontIcon FontSize="16" Glyph="&#xE946;" />
+            </Button>
+            <Button x:Name="ThemeButton" Grid.Column="3" Click="Theme_Click"
                     Style="{StaticResource SubtleButtonStyle}" ToolTipService.ToolTip="Switch to dark mode">
                 <FontIcon x:Name="ThemeIcon" FontSize="16" Glyph="&#xE706;" />
             </Button>
