@@ -24,6 +24,9 @@
                                      NavigateUri="https://github.com/sannlynnhtun-coding/markdown-viewer-app"
                                      ToolTipService.ToolTip="https://github.com/sannlynnhtun-coding/markdown-viewer-app"
                                      AutomationProperties.Name="Open the Markdown Viewer GitHub repository" />
+                    <HyperlinkButton Content="Check for updates" HorizontalAlignment="Left"
+                                     NavigateUri="https://github.com/sannlynnhtun-coding/markdown-viewer-app/releases/latest"
+                                     AutomationProperties.Name="Check for updates on GitHub" />
                 </StackPanel>
             </ScrollViewer>
         </ContentDialog>
