@@ -181,6 +181,7 @@ public sealed partial class MainPage : Page
     private async void About_Click(object sender, RoutedEventArgs e)
     {
         var dialog = (ContentDialog)Resources["AboutDialog"];
+        dialog.Title = $"About Markdown Viewer (v{typeof(App).Assembly.GetName().Version})";
         dialog.XamlRoot = XamlRoot;
         await dialog.ShowAsync();
     }
