@@ -22,8 +22,8 @@ namespace MarkdownViewerApp;
 
 public sealed partial class MainPage : Page
 {
-    private static readonly FontFamily PreviewFontFamily = new("Myanmar Text, Segoe UI");
-    private static readonly FontFamily CodeFontFamily = new("Myanmar Text, Consolas");
+    private static readonly FontFamily PreviewFontFamily = new("Segoe UI, Myanmar Text");
+    private static readonly FontFamily CodeFontFamily = new("Consolas, Myanmar Text");
     private static readonly SolidColorBrush SearchMatchBrush = new(Colors.OrangeRed);
     private readonly List<MarkdownFile> _allFiles = new();
     private readonly ObservableCollection<MarkdownFile> _files = new();
@@ -753,7 +753,7 @@ public sealed partial class MainPage : Page
             return;
         }
 
-        AddText(paragraph.ToString(), 14, Weight(400), new Thickness(0, 0, 0, 4));
+        AddText(paragraph.ToString(), 14, Weight(400), new Thickness(0));
         paragraph.Clear();
     }
 
@@ -1356,7 +1356,7 @@ public sealed partial class MainPage : Page
 
     private static double LineHeight(double fontSize)
     {
-        return Math.Ceiling(fontSize * 1.75);
+        return Math.Ceiling(fontSize * 1.6);
     }
 
     private static TextBlock MutedText(string text)
@@ -1491,7 +1491,8 @@ public sealed partial class MainPage : Page
         CancelEditButton.IsEnabled = hasFile && !_isSaving;
         DocumentNameText.Text = _currentFile?.Name ?? "Select a Markdown file";
         DocumentPathText.Text = _currentFile?.RelativePath ?? "";
-        DocumentPathText.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;
+        DocumentPathText.Visibility = _currentFile is { } document && document.RelativePath != document.Name
+            ? Visibility.Visible : Visibility.Collapsed;
         ToolTipService.SetToolTip(DocumentPathText, _currentFile?.FullPath);
         ToolTipService.SetToolTip(FolderPathText, _folderPath);
         WelcomePanel.Visibility = hasFile ? Visibility.Collapsed : Visibility.Visible;

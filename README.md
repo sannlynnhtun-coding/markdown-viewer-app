@@ -35,7 +35,7 @@ flowchart LR
 You can also right-click an `.md` or `.markdown` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
 
 The app blocks folder changes and file switches while there are unsaved edits, so changes are not lost by accident.
-The document header shows the current filename, relative path, and edit status. Preview uses a centered reading column up to 860 pixels wide.
+The compact document header groups the filename, relative path, edit status, and actions. Preview uses a centered reading column up to 860 pixels wide, with tighter paragraph spacing. Preview and source fonts support both Latin and Myanmar text.
 The sidebar contains folder actions, search, and file navigation. On narrow windows it opens over the document using the sidebar button. The welcome screen guides you to open a folder or choose a document.
 The app starts maximized and uses the main Markdown Viewer logo for the welcome screen, title bar, executable, and Windows package visuals.
 Use the information button beside the theme button to open **About Markdown Viewer**, with an overview of features, author credit, and a link to the GitHub repository.

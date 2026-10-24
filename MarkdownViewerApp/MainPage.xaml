@@ -178,25 +178,27 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <Grid x:Name="DocumentHeader" Padding="24,18" RowSpacing="12">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <StackPanel Spacing="4">
-                                <TextBlock x:Name="DocumentNameText" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="DocumentPathText" FontSize="12" TextTrimming="CharacterEllipsis"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <Grid x:Name="DocumentHeader" Padding="16,8" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock x:Name="DocumentNameText" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="DocumentPathText" FontSize="12" TextTrimming="CharacterEllipsis"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="DirtyText" Grid.Column="1" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
+                                </Grid>
                             </StackPanel>
-                            <Grid Grid.Row="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="DirtyText" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           AutomationProperties.LiveSetting="Polite" Visibility="Collapsed" />
-                                <CommandBar Grid.Column="1" Background="Transparent" HorizontalAlignment="Right" DefaultLabelPosition="Right">
+                                <CommandBar Grid.Column="1" MaxWidth="380" VerticalAlignment="Center" Background="Transparent"
+                                            HorizontalAlignment="Right" DefaultLabelPosition="Right">
                                     <AppBarButton x:Name="EditButton" Label="Edit source" Icon="Edit" Click="Edit_Click" IsEnabled="False" />
                                     <AppBarButton x:Name="SaveButton" Label="Save" Icon="Save" Click="Save_Click" IsEnabled="False"
                                                   Visibility="Collapsed" />
@@ -205,22 +207,21 @@
                                     <AppBarButton x:Name="CancelEditButton" Label="Cancel" Icon="Cancel" Click="CancelEdit_Click"
                                                   IsEnabled="False" Visibility="Collapsed" />
                                 </CommandBar>
-                            </Grid>
                         </Grid>
                         <TabView x:Name="ContentTabs" Grid.Row="1" CanDragTabs="False" CanReorderTabs="False"
-                                 IsAddTabButtonVisible="False" SelectedIndex="0">
+                                 IsAddTabButtonVisible="False" TabWidthMode="SizeToContent" SelectedIndex="0">
                             <TabViewItem Header="Preview" IsClosable="False">
                                 <ScrollViewer x:Name="PreviewScrollViewer" AutomationProperties.Name="Markdown preview"
-                                              Padding="32,24,32,48" VerticalScrollBarVisibility="Auto">
+                                              Padding="16,12,16,24" VerticalScrollBarVisibility="Auto">
                                     <Grid>
-                                        <StackPanel x:Name="PreviewPanel" Spacing="12" MaxWidth="860" HorizontalAlignment="Stretch" />
+                                        <StackPanel x:Name="PreviewPanel" Spacing="6" MaxWidth="860" HorizontalAlignment="Stretch" />
                                     </Grid>
                                 </ScrollViewer>
                             </TabViewItem>
                             <TabViewItem Header="Source" IsClosable="False">
-                                <TextBox x:Name="EditorBox" AcceptsReturn="True" FontFamily="Myanmar Text, Consolas" FontSize="14"
+                                <TextBox x:Name="EditorBox" AcceptsReturn="True" FontFamily="Consolas, Myanmar Text" FontSize="14"
                                          AutomationProperties.Name="Markdown source editor" IsEnabled="False" IsReadOnly="True"
-                                         IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" Margin="16" Padding="16"
+                                         IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" Margin="8" Padding="10"
                                          PlaceholderText="Select a Markdown file" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto" TextChanged="EditorBox_TextChanged" TextWrapping="NoWrap" />
                             </TabViewItem>
