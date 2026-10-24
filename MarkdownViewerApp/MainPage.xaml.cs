@@ -30,6 +30,7 @@ public sealed partial class MainPage : Page
     private MarkdownFile? _currentFile;
     private bool _hasUnsavedChanges;
     private bool _isEditing;
+    private bool _isSaving;
     private bool _isLoadingFile;
     private bool _isChangingSelection;
     private bool _isPreviewControlKeyDown;
@@ -284,41 +285,18 @@ public sealed partial class MainPage : Page
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (_currentFile is null || !_isEditing)
+        if (_currentFile is null || !_isEditing || !_hasUnsavedChanges || _isSaving)
         {
             return;
         }
 
-        if (!_hasUnsavedChanges)
-        {
-            _isEditing = false;
-            ContentTabs.SelectedIndex = 0;
-            UpdateUiState();
-            return;
-        }
-
-        var result = await new ContentDialog
-        {
-            Title = "Save changes?",
-            Content = $"Overwrite {_currentFile.Name}?",
-            PrimaryButtonText = "Save",
-            CloseButtonText = "Cancel",
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot
-        }.ShowAsync();
-
-        if (result != ContentDialogResult.Primary)
-        {
-            return;
-        }
-
+        _isSaving = true;
+        UpdateUiState();
         try
         {
             await File.WriteAllTextAsync(_currentFile.FullPath, EditorBox.Text, Encoding.UTF8);
             _currentFile.Content = EditorBox.Text;
             _hasUnsavedChanges = false;
-            _isEditing = false;
-            ContentTabs.SelectedIndex = 0;
             ApplySearch();
             RenderPreview(EditorBox.Text);
             UpdateUiState();
@@ -327,14 +305,32 @@ public sealed partial class MainPage : Page
         {
             await ShowMessageAsync("Save failed", ex.Message);
         }
+        finally
+        {
+            _isSaving = false;
+            UpdateUiState();
+        }
     }
 
     private async void Revert_Click(object sender, RoutedEventArgs e)
     {
-        if (_currentFile is not null)
+        if (_currentFile is not null && _hasUnsavedChanges && !_isSaving)
         {
-            _isEditing = false;
-            ContentTabs.SelectedIndex = 0;
+            var result = await new ContentDialog
+            {
+                Title = "Discard changes?",
+                Content = $"Discard unsaved changes to {_currentFile.Name}?",
+                PrimaryButtonText = "Discard changes",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = XamlRoot
+            }.ShowAsync();
+
+            if (result != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
             await LoadFileAsync(_currentFile);
         }
     }
@@ -1428,15 +1424,20 @@ public sealed partial class MainPage : Page
     private void UpdateUiState(string? emptyFilesText = null)
     {
         var hasFile = _currentFile is not null;
-        EditorBox.IsEnabled = hasFile;
+        EditorBox.IsEnabled = hasFile && !_isSaving;
         EditorBox.IsReadOnly = !_isEditing;
         EditButton.IsEnabled = hasFile;
         EditButton.Visibility = hasFile && !_isEditing ? Visibility.Visible : Visibility.Collapsed;
         SaveButton.Visibility = _isEditing ? Visibility.Visible : Visibility.Collapsed;
-        SaveButton.IsEnabled = hasFile && _hasUnsavedChanges;
+        SaveButton.IsEnabled = hasFile && _hasUnsavedChanges && !_isSaving;
         RevertButton.Visibility = _isEditing ? Visibility.Visible : Visibility.Collapsed;
-        RevertButton.IsEnabled = hasFile;
-        DirtyText.Visibility = _hasUnsavedChanges ? Visibility.Visible : Visibility.Collapsed;
+        RevertButton.IsEnabled = hasFile && _hasUnsavedChanges && !_isSaving;
+        DocumentNameText.Text = _currentFile?.Name ?? "Select a Markdown file";
+        DocumentPathText.Text = _currentFile?.RelativePath ?? "";
+        DocumentPathText.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;
+        ToolTipService.SetToolTip(DocumentPathText, _currentFile?.FullPath);
+        DirtyText.Text = _isSaving ? "Saving…" : _hasUnsavedChanges ? "Unsaved changes" : "Saved";
+        DirtyText.Visibility = hasFile && (_hasUnsavedChanges || _isEditing) ? Visibility.Visible : Visibility.Collapsed;
         SearchBox.IsEnabled = _allFiles.Count > 0;
         FolderTreeToggle.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);
         RefreshFolderButton.IsEnabled = !string.IsNullOrWhiteSpace(_folderPath);

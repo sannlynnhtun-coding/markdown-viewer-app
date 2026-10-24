@@ -19,7 +19,7 @@ The preview supports common Markdown shapes such as headings, paragraphs, lists,
    standard Windows mouse and keyboard shortcuts. Press `Ctrl+A`, then `Ctrl+C`,
    to copy the complete rendered preview, including tables.
 4. Click `Edit` to change the source in the `Code` tab.
-5. Save to overwrite the file, or revert to discard edits. Use the refresh button to rescan the folder when files change outside the app.
+5. Save writes the file directly and keeps the editor open. **Discard changes** asks for confirmation before reloading the saved file. Use the refresh button to rescan the folder when files change outside the app.
 6. Use the theme button to switch between light and dark mode.
 
 Mermaid diagrams use a fenced block labeled `mermaid`:
@@ -34,6 +34,7 @@ flowchart LR
 You can also right-click an `.md` or `.markdown` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
 
 The app blocks folder changes and file switches while there are unsaved edits, so changes are not lost by accident.
+The document header shows the current filename, relative path, and edit status. Preview uses a centered reading column up to 860 pixels wide.
 
 ## Development Workflow
 
