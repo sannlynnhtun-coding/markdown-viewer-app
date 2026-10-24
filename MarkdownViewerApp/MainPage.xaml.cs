@@ -236,8 +236,8 @@ public sealed partial class MainPage : Page
 
         _isEditing = true;
         ContentTabs.SelectedIndex = 1;
-        EditorBox.Focus(FocusState.Programmatic);
         UpdateUiState();
+        EditorBox.Focus(FocusState.Programmatic);
     }
 
     private void EditorBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -289,9 +289,14 @@ public sealed partial class MainPage : Page
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
+        await SaveCurrentFileAsync();
+    }
+
+    private async Task<bool> SaveCurrentFileAsync()
+    {
         if (_currentFile is null || !_isEditing || !_hasUnsavedChanges || _isSaving)
         {
-            return;
+            return false;
         }
 
         _isSaving = true;
@@ -304,16 +309,55 @@ public sealed partial class MainPage : Page
             ApplySearch();
             RenderPreview(EditorBox.Text);
             UpdateUiState();
+            return true;
         }
         catch (Exception ex)
         {
             await ShowMessageAsync("Save failed", ex.Message);
+            return false;
         }
         finally
         {
             _isSaving = false;
             UpdateUiState();
         }
+    }
+
+    private async void CancelEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentFile is null || !_isEditing || _isSaving)
+        {
+            return;
+        }
+
+        if (_hasUnsavedChanges)
+        {
+            var result = await new ContentDialog
+            {
+                Title = "Finish editing?",
+                Content = $"Save changes to {_currentFile.Name} before leaving the editor?",
+                PrimaryButtonText = "Save",
+                SecondaryButtonText = "Discard changes",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = XamlRoot
+            }.ShowAsync();
+
+            if (result == ContentDialogResult.Secondary)
+            {
+                await LoadFileAsync(_currentFile);
+                return;
+            }
+
+            if (result != ContentDialogResult.Primary || !await SaveCurrentFileAsync())
+            {
+                return;
+            }
+        }
+
+        _isEditing = false;
+        ContentTabs.SelectedIndex = 0;
+        UpdateUiState();
     }
 
     private async void Revert_Click(object sender, RoutedEventArgs e)
@@ -1436,6 +1480,8 @@ public sealed partial class MainPage : Page
         SaveButton.IsEnabled = hasFile && _hasUnsavedChanges && !_isSaving;
         RevertButton.Visibility = _isEditing ? Visibility.Visible : Visibility.Collapsed;
         RevertButton.IsEnabled = hasFile && _hasUnsavedChanges && !_isSaving;
+        CancelEditButton.Visibility = _isEditing ? Visibility.Visible : Visibility.Collapsed;
+        CancelEditButton.IsEnabled = hasFile && !_isSaving;
         DocumentNameText.Text = _currentFile?.Name ?? "Select a Markdown file";
         DocumentPathText.Text = _currentFile?.RelativePath ?? "";
         DocumentPathText.Visibility = hasFile ? Visibility.Visible : Visibility.Collapsed;

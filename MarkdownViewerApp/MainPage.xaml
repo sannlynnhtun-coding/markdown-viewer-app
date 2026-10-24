@@ -175,6 +175,8 @@
                                                   Visibility="Collapsed" />
                                     <AppBarButton x:Name="RevertButton" Label="Discard changes" Icon="Undo" Click="Revert_Click"
                                                   IsEnabled="False" Visibility="Collapsed" />
+                                    <AppBarButton x:Name="CancelEditButton" Label="Cancel" Icon="Cancel" Click="CancelEdit_Click"
+                                                  IsEnabled="False" Visibility="Collapsed" />
                                 </CommandBar>
                             </Grid>
                         </Grid>

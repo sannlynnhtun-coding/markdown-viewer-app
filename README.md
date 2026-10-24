@@ -20,6 +20,7 @@ The preview supports common Markdown shapes such as headings, paragraphs, lists,
    to copy the complete rendered preview, including tables.
 4. Click **Edit source** beside the document header to change the source in the `Source` tab.
 5. Save writes the file directly and keeps the editor open. **Discard changes** asks for confirmation before reloading the saved file. Use the refresh button to rescan the folder when files change outside the app.
+   **Cancel** leaves editing immediately when there are no changes. With unsaved changes, choose **Save**, **Discard changes**, or **Cancel** to keep editing.
 6. Use the theme button to switch between light and dark mode.
 
 Mermaid diagrams use a fenced block labeled `mermaid`:
