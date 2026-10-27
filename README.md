@@ -41,6 +41,24 @@ The app starts maximized and uses the main Markdown Viewer logo for the welcome 
 Use the information button beside the theme button to open **About Markdown Viewer**, with the running app version, an overview of features, author credit, and a link to the GitHub repository. **Check for updates** opens the latest GitHub release in your browser.
 Hold **Ctrl** and scroll the mouse wheel over the preview to zoom in or out (75%–250%). Normal scrolling still moves through the document; the source editor and toolbar stay at their usual size.
 
+## Windows installer
+
+[Download the Windows x64 installer](https://github.com/sannlynnhtun-coding/markdown-viewer-app/releases/latest/download/MarkdownViewer.Setup.exe).
+Run `MarkdownViewer.Setup.exe` to install for your Windows account, with a Start menu shortcut,
+an uninstaller, and **Open with** entries for `.md` and `.markdown` files. The installer includes
+the .NET and Windows App SDK runtimes. Existing MSIX installations remain separate; uninstall
+the older MSIX app in Windows Settings if you no longer need it.
+
+To build locally, install Inno Setup 6, then run:
+
+```powershell
+dotnet publish MarkdownViewerApp/MarkdownViewerApp.csproj -c Release -r win-x64 --self-contained true -p:Platform=x64 -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/installer/publish
+& "${env:LOCALAPPDATA}/Programs/Inno Setup 6/ISCC.exe" scripts/installer.iss
+```
+
+Tag pushes (`v*`) and the manual **Build release** workflow build and upload
+`MarkdownViewer.Setup.exe`, keeping the latest-release download URL stable.
+
 ## Development Workflow
 
 Requirements:

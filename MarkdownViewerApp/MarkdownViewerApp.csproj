@@ -6,9 +6,9 @@
     <RootNamespace>MarkdownViewerApp</RootNamespace>
     <AssemblyTitle>Markdown Viewer</AssemblyTitle>
     <Product>Markdown Viewer</Product>
-    <Version>1.4.0</Version>
-    <AssemblyVersion>1.4.0.3</AssemblyVersion>
-    <FileVersion>1.4.0.3</FileVersion>
+    <Version>1.4.1</Version>
+    <AssemblyVersion>1.4.1.0</AssemblyVersion>
+    <FileVersion>1.4.1.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
@@ -35,6 +35,7 @@
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\AppIcon.ico" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Update="Assets\**" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

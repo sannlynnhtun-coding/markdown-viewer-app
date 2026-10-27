@@ -1,12 +1,14 @@
 name: Build release
 
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag to rebuild
+        description: Release tag to build
         required: true
-        default: v1.3.0
+        default: v1.4.1
 
 permissions:
   contents: write
@@ -15,47 +17,50 @@ jobs:
   package:
     runs-on: windows-latest
     steps:
-      - name: Check out release source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || github.ref_name }}
 
-      - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      - name: Build MSIX package
-        shell: pwsh
-        run: >-
-          dotnet build MarkdownViewerApp/MarkdownViewerApp.csproj
-          -c Release
-          -p:Platform=x64
-          -p:GenerateAppxPackageOnBuild=true
-          -p:AppxBundle=Never
-          -p:AppxPackageDir=${{ github.workspace }}/release-package/
+      - name: Run tests
+        run: dotnet test MarkdownViewerApp.Tests -c Release
 
-      - name: Prepare release assets
+      - name: Publish self-contained Windows app
+        run: >-
+          dotnet publish MarkdownViewerApp/MarkdownViewerApp.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:Platform=x64 -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+          -o artifacts/installer/publish
+
+      - name: Build installer
         shell: pwsh
         run: |
-          $package = Get-ChildItem '${{ github.workspace }}/release-package' -Filter '*.msix' -Recurse |
-            Where-Object Name -eq 'MarkdownViewerApp_1.3.0.0_x64.msix' |
-            Select-Object -First 1
-          if ($null -eq $package) { throw 'The v1.3.0 MSIX package was not produced.' }
+          $compiler = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (!(Test-Path $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          }
+          & $compiler scripts/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 
-          $assetDirectory = '${{ github.workspace }}/release-assets'
-          New-Item -ItemType Directory -Path $assetDirectory -Force | Out-Null
-          Copy-Item $package.FullName "$assetDirectory/MarkdownViewerApp-v1.3.0-x64.msix"
-          Compress-Archive -Path (Join-Path $package.DirectoryName '*') `
-            -DestinationPath "$assetDirectory/MarkdownViewerApp-v1.3.0-x64-sideload.zip" `
-            -Force
+      - name: Verify installer
+        shell: pwsh
+        run: ./scripts/test-installer.ps1
 
-      - name: Replace GitHub release assets
+      - name: Publish GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release upload '${{ inputs.tag }}'
-          '${{ github.workspace }}/release-assets/MarkdownViewerApp-v1.3.0-x64.msix'
-          '${{ github.workspace }}/release-assets/MarkdownViewerApp-v1.3.0-x64-sideload.zip'
-          --clobber
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          gh release view $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:RELEASE_TAG --verify-tag --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
+          }
+          gh release upload $env:RELEASE_TAG artifacts/installer/MarkdownViewer.Setup.exe --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Installer upload failed.' }

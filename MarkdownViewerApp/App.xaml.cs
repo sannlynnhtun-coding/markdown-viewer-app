@@ -20,7 +20,7 @@ public partial class App : Application
         var initialFilePath = activationArgs?.Kind == ExtendedActivationKind.File &&
                               activationArgs.Data is IFileActivatedEventArgs fileArgs
             ? fileArgs.Files.FirstOrDefault()?.Path
-            : null;
+            : System.Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(MarkdownFileSupport.IsMarkdownFile);
 
         MainWindow = new MainWindow(initialFilePath);
         MainWindow.Activate();
