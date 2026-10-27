@@ -29,3 +29,4 @@ try {
 if (Test-Path $registration) { throw 'Uninstall left the file registration behind.' }
 if (Test-Path (Join-Path $installDirectory 'MarkdownViewerApp.exe')) { throw 'Uninstall left the app behind.' }
 Write-Output 'Install, repeat install, payload, file associations and uninstall checks passed.'
+exit 0
