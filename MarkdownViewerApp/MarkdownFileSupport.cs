@@ -15,9 +15,9 @@ public static class MarkdownFileSupport
         return SupportedExtensions.Contains(Path.GetExtension(path));
     }
 
-    public static IEnumerable<string> EnumerateFiles(string folderPath)
+    public static IEnumerable<string> EnumerateFiles(string folderPath, SearchOption searchOption = SearchOption.AllDirectories)
     {
-        return Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories)
+        return Directory.EnumerateFiles(folderPath, "*", searchOption)
             .Where(IsMarkdownFile);
     }
 }

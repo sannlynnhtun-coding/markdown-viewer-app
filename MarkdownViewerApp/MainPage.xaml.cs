@@ -36,6 +36,7 @@ public sealed partial class MainPage : Page
     private bool _isPreviewControlKeyDown;
     private bool _isPreviewSelectAllActive;
     private string _folderPath = "";
+    private SearchOption _folderSearchOption = SearchOption.AllDirectories;
     private string _searchQuery = "";
 
     public MainPage()
@@ -278,7 +279,7 @@ public sealed partial class MainPage : Page
     private async Task RefreshFolderAsync()
     {
         var currentPath = _currentFile?.FullPath;
-        await LoadFolderAsync(_folderPath);
+        await LoadFolderAsync(_folderPath, _folderSearchOption);
 
         var fileToSelect = currentPath is null
             ? _files.FirstOrDefault()
@@ -391,9 +392,10 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private async Task LoadFolderAsync(string folderPath)
+    private async Task LoadFolderAsync(string folderPath, SearchOption searchOption = SearchOption.AllDirectories)
     {
         _folderPath = folderPath;
+        _folderSearchOption = searchOption;
         FolderPathText.Text = folderPath;
         _currentFile = null;
         _hasUnsavedChanges = false;
@@ -406,7 +408,7 @@ public sealed partial class MainPage : Page
 
         _allFiles.Clear();
         _files.Clear();
-        foreach (var file in MarkdownFileSupport.EnumerateFiles(folderPath)
+        foreach (var file in MarkdownFileSupport.EnumerateFiles(folderPath, searchOption)
                      .OrderBy(file => Path.GetRelativePath(folderPath, file), StringComparer.CurrentCultureIgnoreCase))
         {
             _allFiles.Add(new MarkdownFile(
@@ -436,7 +438,8 @@ public sealed partial class MainPage : Page
             throw new InvalidOperationException("The file's containing folder could not be found.");
         }
 
-        await LoadFolderAsync(folderPath);
+        // Explorer opens browse siblings without scanning an entire project and its dependencies.
+        await LoadFolderAsync(folderPath, SearchOption.TopDirectoryOnly);
 
         var file = _allFiles.FirstOrDefault(candidate =>
             string.Equals(candidate.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));

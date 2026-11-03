@@ -32,7 +32,7 @@ flowchart LR
 ```
 ````
 
-You can also right-click an `.md` or `.markdown` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder.
+You can also right-click an `.md` or `.markdown` file in File Explorer and choose **Open with > Markdown Viewer**. The app opens that file and lists the other Markdown files in its containing folder. This does not scan subfolders; use **Choose folder** to browse a folder and its subfolders.
 
 The app blocks folder changes and file switches while there are unsaved edits, so changes are not lost by accident.
 The compact document header groups the filename, relative path, edit status, and actions. Preview uses a centered reading column up to 860 pixels wide, with tighter paragraph spacing. Preview and source fonts support both Latin and Myanmar text.

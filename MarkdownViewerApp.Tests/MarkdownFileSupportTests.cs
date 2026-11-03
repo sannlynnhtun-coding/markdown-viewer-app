@@ -25,6 +25,30 @@ public sealed class MarkdownFileSupportTests
     }
 
     [TestMethod]
+    public void EnumerateFiles_ShellOpenOnlyListsSiblings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"markdown-viewer-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "dependencies"));
+        try
+        {
+            var selected = Path.Combine(root, "Document with spaces.md");
+            File.WriteAllText(selected, "# မြန်မာ");
+            File.WriteAllText(Path.Combine(root, "sibling.markdown"), "# Sibling");
+            File.WriteAllText(Path.Combine(root, "dependencies", "README.md"), "# Dependency");
+
+            var files = MarkdownFileSupport.EnumerateFiles(root, SearchOption.TopDirectoryOnly).ToArray();
+
+            Assert.HasCount(2, files);
+            CollectionAssert.Contains(files, selected);
+            CollectionAssert.Contains(files, Path.Combine(root, "sibling.markdown"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void EnumerateFiles_FindsMarkdownAndMdFilesRecursively()
     {
         var root = Path.Combine(Path.GetTempPath(), $"markdown-viewer-tests-{Guid.NewGuid():N}");

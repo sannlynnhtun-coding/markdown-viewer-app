@@ -8,7 +8,7 @@ on:
       tag:
         description: Release tag to build
         required: true
-        default: v1.4.1
+        default: v1.4.2
 
 permissions:
   contents: write
